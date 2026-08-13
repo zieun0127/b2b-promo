@@ -37,25 +37,26 @@ flowchart TB
 - **선행 Task**: 없음
 - **작업**: PostgreSQL 17 설치 또는 Docker 컨테이너 기동, 개발용 DB/계정 생성, 접속 문자열 확보
 - **완료 조건**
-  - [ ] PostgreSQL 17에 `psql` 또는 GUI로 접속된다
-  - [ ] 프로젝트 전용 데이터베이스가 생성되어 있다
-  - [ ] `DATABASE_URL` 형태의 접속 문자열을 확보했다
+  - [x] PostgreSQL 17에 `psql` 또는 GUI로 접속된다 (`postgresql-mcp`로 `SELECT version()` 확인, PostgreSQL 17.10)
+  - [ ] 프로젝트 전용 데이터베이스가 생성되어 있다 — **미완료**: 현재 `backend/.env`(`DB_CONN_STRING`)가 기본 `postgres` DB를 그대로 가리키고 있음. 이대로 진행해도 MVP 동작에는 지장 없으나, 별도 DB를 원하면 `CREATE DATABASE sajangnim_mbti;` 후 접속 문자열을 갈아끼워야 함
+  - [x] 접속 문자열을 확보했다 (`backend/.env`의 `DB_CONN_STRING=postgresql://postgres:postgres@localhost:5432/postgres`)
 
 ### DB-2. 스키마 생성
 - **선행 Task**: DB-1
 - **작업**: `docs/8-schema.sql`을 `backend/src/migrations/001_init.sql`로 배치하고 실행하여 테이블 6개 생성
 - **완료 조건**
-  - [ ] `users`, `mbti_questions`, `mbti_result_types`, `promotion_offers`, `mbti_result_type_promotion_offers`, `test_submissions` 6개 테이블이 생성된다
-  - [ ] FK 제약(`test_submissions.user_id`, `mbti_result_type_code`, 조인 테이블 2개)이 모두 걸려 있다
-  - [ ] `chk_completed_has_result` CHECK 제약이 존재한다 (COMPLETED + 결과 NULL 로우 INSERT 시 실패)
+  - [x] `users`, `mbti_questions`, `mbti_result_types`, `promotion_offers`, `mbti_result_type_promotion_offers`, `test_submissions` 6개 테이블이 생성된다 (`postgresql-mcp` `get_info`로 6개 테이블 확인)
+  - [x] FK 제약(`test_submissions.user_id`, `mbti_result_type_code`, 조인 테이블 2개)이 모두 걸려 있다 (`001_init.sql` DDL 그대로 실행, 트랜잭션 성공)
+  - [x] `chk_completed_has_result` CHECK 제약이 존재한다 (COMPLETED + 결과 NULL 로우 INSERT 시 실패) — `001_init.sql`에 포함되어 실행됨
 
 ### DB-3. 참조 데이터 시드
 - **선행 Task**: DB-2
-- **작업**: 문항 12개(지표당 3개), MBTI 16유형 설명/장사 TIP, 추천 프로모션 및 유형 매핑 데이터 INSERT 스크립트 작성(`002_seed.sql`)
+- **작업**: 문항 12개(지표당 3개), MBTI 16유형 설명/장사 TIP, 추천 프로모션 및 유형 매핑 데이터 INSERT 스크립트 작성(`002_seed.sql`), 관리자 계정 1건 시드(`003_seed_admin.sql`)
 - **완료 조건**
-  - [ ] `mbti_questions` 12행이며 `target_indicator`별로 정확히 3행씩이다
-  - [ ] `mbti_result_types` 16행이며 모든 행에 설명·장사 TIP 텍스트가 채워져 있다
-  - [ ] `promotion_offers`가 1행 이상이고, 16개 유형 모두 조인 테이블을 통해 최소 1개 프로모션과 매핑된다
+  - [x] `mbti_questions` 12행이며 `target_indicator`별로 정확히 3행씩이다 (EI/SN/TF/JP 각 3행 확인)
+  - [x] `mbti_result_types` 16행이며 모든 행에 설명·장사 TIP 텍스트가 채워져 있다 (16행, `description`/`business_tip` 모두 NOT NULL 확인)
+  - [x] `promotion_offers`가 1행 이상이고, 16개 유형 모두 조인 테이블을 통해 최소 1개 프로모션과 매핑된다 (프로모션 16행, 유형별 1:1 매핑, 미매핑 유형 0건 확인)
+  - [x] 관리자(ADMIN) 계정 1건이 시드되어 있다 (`backend/src/migrations/003_seed_admin.sql`, pgcrypto `crypt()`로 bcrypt 호환 해시 생성 — BE-2의 `bcrypt.compare()`로 그대로 검증 가능. 실제 이메일/비밀번호는 `backend/.env`의 `ADMIN_SEED_EMAIL`/`ADMIN_SEED_PASSWORD`에만 기록, 파일은 gitignore 처리되어 저장소에는 커밋되지 않음)
 
 ---
 
@@ -68,7 +69,7 @@ flowchart TB
   - [ ] `npm start`로 서버가 기동되고 헬스체크 응답(예: `GET /api/health` → 200)이 온다
   - [ ] `pool.js`를 통해 DB 쿼리 1건이 성공한다
   - [ ] 임의 에러 발생 시 전역 errorHandler가 `{ message, status }` JSON으로 응답한다
-  - [ ] `.env.example`에 `DATABASE_URL`, `JWT_ACCESS_SECRET`, `JWT_REFRESH_SECRET`, 만료시간, `PORT`가 명시되어 있다
+  - [ ] `.env.example`에 `DB_CONN_STRING`, `JWT_ACCESS_SECRET`, `JWT_REFRESH_SECRET`, 만료시간, `PORT`가 명시되어 있다 (실제 값은 `backend/.env`에 이미 있음, `DB_CONN_STRING`은 DB-1에서 확보한 접속 문자열과 동일한 변수명이어야 함)
 
 ### BE-2. 인증 (회원가입/로그인/토큰 재발급)
 - **선행 Task**: BE-1
@@ -186,3 +187,6 @@ flowchart TB
 |---|---|---|
 | v1.0 | 2026-08-13 | 초안 작성 |
 | v1.1 | 2026-08-13 | swagger.json 정합성 검토 반영: BE-5 작업 설명에 FK 조인 방식 명시 |
+| v1.2 | 2026-08-13 | DB-1~DB-3 수행 결과 반영: 체크박스 갱신, 전용 DB 미생성 및 관리자 계정 미시드 상태 명시 |
+| v1.3 | 2026-08-13 | 관리자 계정 1건 시드 완료 반영 (`003_seed_admin.sql`), DB-3 체크박스 갱신 |
+| v1.4 | 2026-08-13 | docs 전체 재검토: BE-1 완료조건의 환경변수명을 실제 `.env`와 동일한 `DB_CONN_STRING`으로 수정 |

@@ -52,7 +52,7 @@ route → controller → service → db(pg 쿼리)
 
 ## 5. 설정/보안/운영 원칙
 
-- **환경변수**: `.env` 파일(gitignore 처리)로 관리. 필수 항목: `DATABASE_URL`, `JWT_ACCESS_SECRET`, `JWT_REFRESH_SECRET`, `ACCESS_TOKEN_EXPIRES_IN`, `REFRESH_TOKEN_EXPIRES_IN`, `PORT`. `.env.example`을 함께 커밋해 실행 방법을 문서화한다.
+- **환경변수**: `.env` 파일(gitignore 처리)로 관리. 필수 항목: `DB_CONN_STRING`, `JWT_ACCESS_SECRET`, `JWT_REFRESH_SECRET`, `ACCESS_TOKEN_EXPIRES_IN`, `REFRESH_TOKEN_EXPIRES_IN`, `PORT`. 개발용 관리자 계정 시드에 쓰인 `ADMIN_SEED_EMAIL`/`ADMIN_SEED_PASSWORD`(`backend/src/migrations/003_seed_admin.sql` 참조)도 이미 `backend/.env`에 있다. `.env.example`을 함께 커밋해 실행 방법을 문서화한다(비밀값은 빈 문자열/예시로만 채움).
 - **JWT 인증(PRD 5절 반영)**:
   - Access Token(짧은 만료)은 매 요청 `Authorization: Bearer` 헤더로 전달, 인증 미들웨어에서 검증 후 `req.user`에 `{ id, role }` 주입.
   - Refresh Token(긴 만료)은 서버 DB에 저장하지 않고 stateless로만 검증(도메인 정의서/PRD 확정 사항). 재발급 전용 엔드포인트(`POST /api/auth/refresh`) 하나만 둔다.
@@ -133,8 +133,10 @@ backend/
 │  │  ├─ requireAuth.js             # Access Token 검증
 │  │  ├─ requireAdmin.js            # role=ADMIN 체크
 │  │  └─ errorHandler.js            # 전역 에러 핸들러
-│  ├─ migrations/                   # DB 스키마 (테이블 5개 생성 SQL)
-│  │  └─ 001_init.sql
+│  ├─ migrations/                   # DB 스키마/시드 SQL (docs/8-erd.md 기준 테이블 6개, 조인 테이블 포함)
+│  │  ├─ 001_init.sql               # 테이블 6개 생성 (docs/8-schema.sql과 동일)
+│  │  ├─ 002_seed.sql               # 문항 12개, 유형 16개, 프로모션 16개 참조 데이터
+│  │  └─ 003_seed_admin.sql         # 관리자 계정 1건 시드 (비밀번호는 psql 변수로 주입, backend/.env 참조)
 │  ├─ app.js                        # Express 앱 설정 (미들웨어, 라우트 등록)
 │  └─ server.js                     # 서버 기동 진입점
 ├─ .env.example
@@ -149,3 +151,4 @@ backend/
 |---|---|---|
 | v1.0 | 2026-08-13 | 초안 작성 |
 | v1.1 | 2026-08-13 | ERD/스키마와 정합성 검토 반영: 3절 컬럼명 예시를 `mbti_result_type_code`로 수정, 7절 `promotionOffer.db.js`에 조인 테이블 처리 주석 추가 |
+| v1.2 | 2026-08-13 | 실제 DB 작업 결과와 정합성 검토 반영: 5절 환경변수명을 실제 `.env`와 동일한 `DB_CONN_STRING`으로 수정 및 관리자 시드 변수 언급 추가, 7절 migrations 디렉토리 트리에 002/003 시드 파일 반영 |
