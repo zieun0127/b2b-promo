@@ -1,0 +1,424 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "사장님 MBTI API",
+    "version": "1.0.0",
+    "description": "외식사업자 대상 MBTI 테스트 기반 참여형 이벤트 API. 로그인 후 12문항 예/아니오 응답으로 MBTI 유형을 판정하고, 결과·장사 TIP·추천 프로모션을 제공하며, 관리자에게는 참여 현황 통계를 제공한다. (교육용 MVP, 비즈니스 API 7개 — 헬스체크(GET /api/health)는 docs/9-plan.md BE-1 참조, 본 스펙에는 포함하지 않음)"
+  },
+  "servers": [
+    { "url": "/api", "description": "API base path" }
+  ],
+  "tags": [
+    { "name": "auth", "description": "회원가입/로그인/토큰 재발급" },
+    { "name": "mbti-questions", "description": "MBTI 판별 문항 조회" },
+    { "name": "test-submissions", "description": "MBTI 테스트 제출 및 결과 조회" },
+    { "name": "admin", "description": "관리자 통계" }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "로그인(POST /api/auth/login) 응답의 access_token을 `Authorization: Bearer {access_token}` 헤더로 전달"
+      }
+    },
+    "schemas": {
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "message": { "type": "string", "example": "인증 토큰이 없습니다." },
+          "status": { "type": "integer", "example": 401 }
+        },
+        "required": ["message", "status"]
+      },
+      "User": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid", "example": "3f9a1c2e-1234-4a5b-8c6d-abcdef123456" },
+          "email": { "type": "string", "format": "email", "example": "owner@example.com" },
+          "role": { "type": "string", "enum": ["USER", "ADMIN"], "example": "USER" },
+          "created_at": { "type": "string", "format": "date-time", "example": "2026-08-13T10:00:00Z" }
+        },
+        "required": ["id", "email", "role", "created_at"]
+      },
+      "SignupRequest": {
+        "type": "object",
+        "properties": {
+          "email": { "type": "string", "format": "email", "example": "owner@example.com" },
+          "password": { "type": "string", "format": "password", "example": "password1234" }
+        },
+        "required": ["email", "password"]
+      },
+      "LoginRequest": {
+        "type": "object",
+        "properties": {
+          "email": { "type": "string", "format": "email", "example": "owner@example.com" },
+          "password": { "type": "string", "format": "password", "example": "password1234" }
+        },
+        "required": ["email", "password"]
+      },
+      "TokenPair": {
+        "type": "object",
+        "properties": {
+          "access_token": { "type": "string", "description": "짧은 만료의 JWT Access Token" },
+          "refresh_token": { "type": "string", "description": "긴 만료의 JWT Refresh Token (서버 DB 미저장, stateless)" },
+          "user": { "$ref": "#/components/schemas/User" }
+        },
+        "required": ["access_token", "refresh_token", "user"]
+      },
+      "RefreshRequest": {
+        "type": "object",
+        "properties": {
+          "refresh_token": { "type": "string" }
+        },
+        "required": ["refresh_token"]
+      },
+      "RefreshResponse": {
+        "type": "object",
+        "properties": {
+          "access_token": { "type": "string", "description": "새로 발급된 Access Token" }
+        },
+        "required": ["access_token"]
+      },
+      "MbtiQuestion": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "content": { "type": "string", "example": "새로운 메뉴를 자주 시도하는 편이다" },
+          "target_indicator": { "type": "string", "enum": ["EI", "SN", "TF", "JP"], "example": "SN" },
+          "yes_trait_value": { "type": "string", "enum": ["E", "I", "S", "N", "T", "F", "J", "P"], "example": "N" }
+        },
+        "required": ["id", "content", "target_indicator", "yes_trait_value"]
+      },
+      "AnswerInput": {
+        "type": "object",
+        "properties": {
+          "question_id": { "type": "string", "format": "uuid" },
+          "answer": { "type": "boolean", "description": "예(true) / 아니오(false)" }
+        },
+        "required": ["question_id", "answer"]
+      },
+      "SubmitTestRequest": {
+        "type": "object",
+        "properties": {
+          "answers": {
+            "type": "array",
+            "description": "12문항 전체에 대한 답변. 12개 미만이거나 문항 ID가 유효하지 않으면 400",
+            "items": { "$ref": "#/components/schemas/AnswerInput" },
+            "minItems": 12,
+            "maxItems": 12
+          }
+        },
+        "required": ["answers"]
+      },
+      "PromotionOffer": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "name": { "type": "string", "example": "평일 오후 타임세일 프로모션" },
+          "description": { "type": "string", "example": "한가한 시간대 방문 고객 대상 할인 프로모션 소개" }
+        },
+        "required": ["id", "name", "description"]
+      },
+      "MbtiResultType": {
+        "type": "object",
+        "properties": {
+          "type_code": { "type": "string", "example": "ENTJ" },
+          "description": { "type": "string", "example": "체계적으로 매장을 운영하는 리더형" },
+          "business_tip": { "type": "string", "example": "직원별 역할 분담을 명확히 하면 효율이 오릅니다." }
+        },
+        "required": ["type_code", "description", "business_tip"]
+      },
+      "TestSubmissionResult": {
+        "type": "object",
+        "description": "완료된 테스트 제출 결과와 판정된 MBTI 유형 상세 정보",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "user_id": { "type": "string", "format": "uuid" },
+          "submitted_at": { "type": "string", "format": "date-time" },
+          "ei_value": { "type": "string", "enum": ["E", "I"] },
+          "sn_value": { "type": "string", "enum": ["S", "N"] },
+          "tf_value": { "type": "string", "enum": ["T", "F"] },
+          "jp_value": { "type": "string", "enum": ["J", "P"] },
+          "status": { "type": "string", "enum": ["COMPLETED"], "example": "COMPLETED" },
+          "mbti_result_type": { "$ref": "#/components/schemas/MbtiResultType" },
+          "promotion_offers": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/PromotionOffer" }
+          }
+        },
+        "required": ["id", "user_id", "submitted_at", "ei_value", "sn_value", "tf_value", "jp_value", "status", "mbti_result_type", "promotion_offers"]
+      },
+      "IndicatorTraitStat": {
+        "type": "object",
+        "properties": {
+          "value": { "type": "string", "example": "E" },
+          "count": { "type": "integer", "example": 12 },
+          "ratio": { "type": "number", "format": "float", "description": "0~1 사이 비율", "example": 0.4 }
+        },
+        "required": ["value", "count", "ratio"]
+      },
+      "IndicatorStat": {
+        "type": "object",
+        "properties": {
+          "indicator": { "type": "string", "enum": ["EI", "SN", "TF", "JP"], "example": "EI" },
+          "traits": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/IndicatorTraitStat" },
+            "minItems": 2,
+            "maxItems": 2
+          }
+        },
+        "required": ["indicator", "traits"]
+      },
+      "ResultTypeStat": {
+        "type": "object",
+        "properties": {
+          "type_code": { "type": "string", "example": "ENTJ" },
+          "count": { "type": "integer", "example": 5 },
+          "ratio": { "type": "number", "format": "float", "example": 0.16 }
+        },
+        "required": ["type_code", "count", "ratio"]
+      },
+      "AdminStats": {
+        "type": "object",
+        "description": "완료(COMPLETED) 상태의 TestSubmission만 집계 대상. 참여 0건이어도 0/0으로 나누기 없이 안전하게 반환",
+        "properties": {
+          "total_completed_submissions": { "type": "integer", "example": 30 },
+          "by_result_type": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/ResultTypeStat" }
+          },
+          "by_indicator": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/IndicatorStat" }
+          }
+        },
+        "required": ["total_completed_submissions", "by_result_type", "by_indicator"]
+      }
+    },
+    "responses": {
+      "Unauthorized": {
+        "description": "인증 토큰 누락 또는 유효하지 않음",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/ErrorResponse" },
+            "example": { "message": "인증 토큰이 없거나 유효하지 않습니다.", "status": 401 }
+          }
+        }
+      },
+      "Forbidden": {
+        "description": "권한 없음 (일반 사용자가 관리자 전용 API 호출)",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/ErrorResponse" },
+            "example": { "message": "관리자만 접근할 수 있습니다.", "status": 403 }
+          }
+        }
+      }
+    }
+  },
+  "paths": {
+    "/auth/signup": {
+      "post": {
+        "tags": ["auth"],
+        "summary": "회원가입",
+        "description": "이메일/비밀번호로 신규 계정을 생성한다. 인증 불필요. 비밀번호는 서버에서 해시하여 저장한다.",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": { "schema": { "$ref": "#/components/schemas/SignupRequest" } }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "가입 성공",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/User" } }
+            }
+          },
+          "400": {
+            "description": "이메일 형식 오류 또는 필수값 누락",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" },
+                "example": { "message": "이메일 형식이 올바르지 않습니다.", "status": 400 }
+              }
+            }
+          },
+          "409": {
+            "description": "이미 가입된 이메일",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" },
+                "example": { "message": "이미 가입된 이메일입니다.", "status": 409 }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "tags": ["auth"],
+        "summary": "로그인",
+        "description": "이메일/비밀번호로 로그인하여 Access Token과 Refresh Token을 발급받는다. 인증 불필요.",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": { "schema": { "$ref": "#/components/schemas/LoginRequest" } }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "로그인 성공",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/TokenPair" } }
+            }
+          },
+          "401": {
+            "description": "이메일 또는 비밀번호 불일치",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" },
+                "example": { "message": "이메일 또는 비밀번호가 올바르지 않습니다.", "status": 401 }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/refresh": {
+      "post": {
+        "tags": ["auth"],
+        "summary": "Access Token 재발급",
+        "description": "Refresh Token으로 새로운 Access Token을 발급받는다. Refresh Token은 서버 DB에 저장되지 않고 만료 여부만 stateless로 검증한다(revoke 기능 없음). 인증 불필요(헤더가 아닌 요청 본문으로 refresh_token 전달).",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": { "schema": { "$ref": "#/components/schemas/RefreshRequest" } }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "재발급 성공",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/RefreshResponse" } }
+            }
+          },
+          "401": {
+            "description": "Refresh Token이 없거나 만료/위조됨",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" },
+                "example": { "message": "Refresh Token이 유효하지 않습니다.", "status": 401 }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mbti-questions": {
+      "get": {
+        "tags": ["mbti-questions"],
+        "summary": "MBTI 판별 문항 목록 조회",
+        "description": "지표당 3문항씩 총 12문항을 반환한다. 로그인한 사용자만 호출 가능.",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "문항 12개 반환",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/MbtiQuestion" }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/test-submissions": {
+      "post": {
+        "tags": ["test-submissions"],
+        "summary": "MBTI 테스트 제출",
+        "description": "12문항 전체에 대한 예/아니오 답변을 제출하면 E/I, S/N, T/F, J/P 4개 지표를 판정하여 16개 유형 중 하나를 결정하고, 완료(COMPLETED) 상태로 이력을 저장한다. 동일 사용자가 재제출해도 기존 이력을 덮어쓰지 않고 새 행으로 누적된다. 로그인한 사용자만 호출 가능.",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": { "schema": { "$ref": "#/components/schemas/SubmitTestRequest" } }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "제출 및 판정 성공",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/TestSubmissionResult" } }
+            }
+          },
+          "400": {
+            "description": "12문항 전체에 답변하지 않음. 이 경우 아무 행도 저장되지 않는다.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" },
+                "example": { "message": "12문항 모두 답변해야 제출할 수 있습니다.", "status": 400 }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/test-submissions/me/latest": {
+      "get": {
+        "tags": ["test-submissions"],
+        "summary": "본인의 가장 최근 테스트 결과 조회",
+        "description": "로그인한 사용자 본인의 가장 최근 완료(COMPLETED) 테스트 결과를 유형 설명, 장사 TIP, 추천 프로모션과 함께 반환한다(마이페이지 용도). 타인의 결과는 조회되지 않는다.",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "최근 결과 반환",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/TestSubmissionResult" } }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "404": {
+            "description": "완료된 참여 이력이 없음",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" },
+                "example": { "message": "완료된 테스트 참여 이력이 없습니다.", "status": 404 }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/stats": {
+      "get": {
+        "tags": ["admin"],
+        "summary": "관리자 참여 현황 통계 조회",
+        "description": "관리자(role=ADMIN) 전용 API. 완료(COMPLETED)된 TestSubmission만 집계 대상으로 하여 전체 참여자 수, 16개 유형별 참여자 수·비율, E/I·S/N·T/F·J/P 4개 지표별 비율을 반환한다. 참여 데이터가 0건이어도 0으로 나누기 없이 정상 응답한다. 일반 사용자(role=USER)가 호출하면 403을 반환한다.",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "통계 반환",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/AdminStats" } }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" }
+        }
+      }
+    }
+  }
+}

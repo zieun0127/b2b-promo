@@ -7,7 +7,7 @@
 ## Task 의존 관계
 
 ```mermaid
-flowchart LR
+flowchart TB
     D1[DB-1 환경] --> D2[DB-2 스키마]
     D2 --> D3[DB-3 시드]
     D2 --> B1[BE-1 부트스트랩]
@@ -97,7 +97,7 @@ flowchart LR
 
 ### BE-5. 결과·마이페이지 조회 API
 - **선행 Task**: BE-4
-- **작업**: 제출 결과 상세 조회 및 최근 결과 조회. 유형 설명·장사 TIP·추천 프로모션(조인 테이블 경유)까지 함께 반환
+- **작업**: 제출 결과 상세 조회 및 최근 결과 조회. `test_submissions.mbti_result_type_code`로 `mbti_result_types`를 조인해 유형 설명·장사 TIP을, 조인 테이블(`mbti_result_type_promotion_offers`)을 경유해 추천 프로모션까지 응답 객체(`mbti_result_type`)로 구성해 반환 (`docs/swagger.json`의 `TestSubmissionResult` 스키마 참조)
 - **완료 조건**
   - [ ] `GET /api/test-submissions/me/latest`가 본인의 가장 최근 완료 결과를 반환한다
   - [ ] 응답에 MBTI 유형 코드, 유형 설명, 장사 TIP, 추천 프로모션 목록이 포함된다
@@ -185,3 +185,4 @@ flowchart LR
 | 버전 | 날짜/시간 | 변경 내용 |
 |---|---|---|
 | v1.0 | 2026-08-13 | 초안 작성 |
+| v1.1 | 2026-08-13 | swagger.json 정합성 검토 반영: BE-5 작업 설명에 FK 조인 방식 명시 |
