@@ -70,6 +70,7 @@
 - 백엔드: Node.js + Express, pg 라이브러리로 PostgreSQL 접근
 - 데이터베이스: PostgreSQL 17
 - 도메인 엔티티 ↔ DB 테이블: User, MbtiQuestion, MbtiResultType, PromotionOffer, TestSubmission (도메인 정의서 4절 그대로 매핑)
+  - 단, MbtiResultType-PromotionOffer는 N:N 관계이므로 관계형 DB 표현을 위한 조인 테이블(`mbti_result_type_promotion_offers`) 1개가 추가로 필요함 (`docs/8-erd.md` 참조)
 
 ## 7. 일정 및 리소스
 - 일정: 3일, 1인 개발
@@ -90,3 +91,4 @@
 | v1.1 | 2026-08-13 | 비기능 요구사항에 JWT 기반 인증(Access Token + Refresh Token) 방식 명시 |
 | v1.2 | 2026-08-13 | 성공 지표의 "누적" 해석을 확인 필요한 가정으로 명시하고, 집계 기준(고유 거래처 수 vs 누적 건수)을 잠정 확정 |
 | v1.3 | 2026-08-13 | docs 간 정합성 검토 반영: 1절 "이용 거래처"→"이용 건수"로 8절과 표현 통일, Refresh Token stateless 처리 방침 명시 |
+| v1.4 | 2026-08-13 | ERD/스키마와 정합성 검토 반영: 6절에 N:N 조인 테이블(mbti_result_type_promotion_offers) 필요 사실 명시 |

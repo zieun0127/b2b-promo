@@ -36,7 +36,7 @@ route → controller → service → db(pg 쿼리)
 ## 3. 코드/네이밍 원칙
 
 - **엔티티명은 도메인 정의서와 동일하게**: 파일명·클래스명·API 응답 키 모두 `User`, `MbtiQuestion`, `MbtiResultType`, `PromotionOffer`, `TestSubmission`을 그대로 사용(축약/의역 금지). 예: `testSubmissionService.js`, `mbtiResultTypeRepo` 대신 `mbtiResultType.db.js`.
-- **DB 테이블/컬럼**: 테이블명은 엔티티명의 snake_case 복수형(`users`, `mbti_questions`, `mbti_result_types`, `promotion_offers`, `test_submissions`). 컬럼명은 snake_case (`user_id`, `mbti_result_type`, `created_at`). PRD/도메인 정의서에 등장하는 속성명(예: `role`, `mbti_result_type`)을 그대로 컬럼명으로 사용해 매핑 고민을 없앤다.
+- **DB 테이블/컬럼**: 테이블명은 엔티티명의 snake_case 복수형(`users`, `mbti_questions`, `mbti_result_types`, `promotion_offers`, `test_submissions`). 컬럼명은 snake_case (`user_id`, `mbti_result_type_code`, `created_at`). PRD/도메인 정의서에 등장하는 속성명(예: `role`)을 그대로 컬럼명으로 사용해 매핑 고민을 없애며, FK는 참조 대상의 PK 컬럼명에 맞춰 명명한다(`mbti_result_types.type_code` → `test_submissions.mbti_result_type_code`, `docs/8-erd.md` 참조).
 - **JS/TS 변수·함수**: camelCase. DB 로우(snake_case) ↔ JS 객체(camelCase) 변환은 매핑 라이브러리 없이 db 계층 함수 안에서 필요한 필드만 그때그때 변환한다(전역 자동 변환기 도입 금지, 엔티티 5개뿐이라 이득이 없음).
 - **파일명**: 프론트엔드는 컴포넌트 `PascalCase.tsx`, 훅/유틸은 `camelCase.ts`. 백엔드는 전부 `camelCase.js` (또는 `.controller.js`/`.service.js`/`.db.js` 접미사로 레이어 구분).
 - **라우트 경로**: REST 리소스명은 엔티티의 kebab-case 복수형과 일치 (`/api/test-submissions`, `/api/promotion-offers`).
@@ -127,7 +127,7 @@ backend/
 │  │  ├─ user.db.js
 │  │  ├─ mbtiQuestion.db.js
 │  │  ├─ mbtiResultType.db.js
-│  │  ├─ promotionOffer.db.js
+│  │  ├─ promotionOffer.db.js       # mbti_result_type_promotion_offers 조인 테이블 조회도 여기서 처리 (docs/8-erd.md 참조)
 │  │  └─ testSubmission.db.js
 │  ├─ middlewares/
 │  │  ├─ requireAuth.js             # Access Token 검증
@@ -148,3 +148,4 @@ backend/
 | 버전 | 날짜/시간 | 변경 내용 |
 |---|---|---|
 | v1.0 | 2026-08-13 | 초안 작성 |
+| v1.1 | 2026-08-13 | ERD/스키마와 정합성 검토 반영: 3절 컬럼명 예시를 `mbti_result_type_code`로 수정, 7절 `promotionOffer.db.js`에 조인 테이블 처리 주석 추가 |
