@@ -38,7 +38,7 @@ flowchart TB
 - **작업**: PostgreSQL 17 설치 또는 Docker 컨테이너 기동, 개발용 DB/계정 생성, 접속 문자열 확보
 - **완료 조건**
   - [x] PostgreSQL 17에 `psql` 또는 GUI로 접속된다 (`postgresql-mcp`로 `SELECT version()` 확인, PostgreSQL 17.10)
-  - [ ] 프로젝트 전용 데이터베이스가 생성되어 있다 — **미완료**: 현재 `backend/.env`(`DB_CONN_STRING`)가 기본 `postgres` DB를 그대로 가리키고 있음. 이대로 진행해도 MVP 동작에는 지장 없으나, 별도 DB를 원하면 `CREATE DATABASE sajangnim_mbti;` 후 접속 문자열을 갈아끼워야 함
+  - [x] 데이터베이스 접속 대상이 결정되어 있다 — **결정**: 별도 전용 DB를 만들지 않고 기본 `postgres` DB를 그대로 사용하기로 확정(1인 개발 MVP 규모상 분리 불필요 판단). `backend/.env`의 `DB_CONN_STRING`이 이 DB를 가리킴
   - [x] 접속 문자열을 확보했다 (`backend/.env`의 `DB_CONN_STRING=postgresql://postgres:postgres@localhost:5432/postgres`)
 
 ### DB-2. 스키마 생성
@@ -190,3 +190,4 @@ flowchart TB
 | v1.2 | 2026-08-13 | DB-1~DB-3 수행 결과 반영: 체크박스 갱신, 전용 DB 미생성 및 관리자 계정 미시드 상태 명시 |
 | v1.3 | 2026-08-13 | 관리자 계정 1건 시드 완료 반영 (`003_seed_admin.sql`), DB-3 체크박스 갱신 |
 | v1.4 | 2026-08-13 | docs 전체 재검토: BE-1 완료조건의 환경변수명을 실제 `.env`와 동일한 `DB_CONN_STRING`으로 수정 |
+| v1.5 | 2026-08-13 | DB-1: 전용 DB 미생성 항목을 "기본 postgres DB 사용 확정"으로 변경, DB-1 전체 완료 |
