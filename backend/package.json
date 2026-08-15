@@ -1,0 +1,22 @@
+{
+  "name": "backend",
+  "private": true,
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "test": "jest",
+    "test:coverage": "jest --coverage"
+  },
+  "dependencies": {
+    "express": "^4",
+    "pg": "^8",
+    "jsonwebtoken": "^9",
+    "bcrypt": "^5",
+    "cors": "^2",
+    "dotenv": "^16"
+  },
+  "devDependencies": {
+    "jest": "^29",
+    "supertest": "^6"
+  }
+}

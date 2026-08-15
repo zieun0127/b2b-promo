@@ -66,10 +66,11 @@ flowchart TB
 - **선행 Task**: DB-2
 - **작업**: `backend/` 초기화, 의존성 설치(express, pg, jsonwebtoken, bcrypt, cors, dotenv), `5-project-principle.md` 7절 디렉토리 골격 생성, `pool.js`·`app.js`·`server.js`·전역 `errorHandler.js`·`.env.example` 작성
 - **완료 조건**
-  - [ ] `npm start`로 서버가 기동되고 헬스체크 응답(예: `GET /api/health` → 200)이 온다
-  - [ ] `pool.js`를 통해 DB 쿼리 1건이 성공한다
-  - [ ] 임의 에러 발생 시 전역 errorHandler가 `{ message, status }` JSON으로 응답한다
-  - [ ] `.env.example`에 `DB_CONN_STRING`, `JWT_ACCESS_SECRET`, `JWT_REFRESH_SECRET`, 만료시간, `PORT`가 명시되어 있다 (실제 값은 `backend/.env`에 이미 있음, `DB_CONN_STRING`은 DB-1에서 확보한 접속 문자열과 동일한 변수명이어야 함)
+  - [x] `npm start`로 서버가 기동되고 헬스체크 응답(예: `GET /api/health` → 200)이 온다 (`npm start` 후 `curl /api/health` → 200 `{"status":"ok"}` 확인, `health.test.js`로도 자동 검증)
+  - [x] `pool.js`를 통해 DB 쿼리 1건이 성공한다 (헬스체크가 `pool.query('SELECT 1')` 실행, 실제 로컬 PostgreSQL 연결로 테스트 통과)
+  - [x] 임의 에러 발생 시 전역 errorHandler가 `{ message, status }` JSON으로 응답한다 (`errorHandler.test.js`: AppError 400 / 일반 Error 500 각각 검증, `health.test.js`의 DB 장애 모킹 케이스로도 확인)
+  - [x] `.env.example`에 `DB_CONN_STRING`, `JWT_ACCESS_SECRET`, `JWT_REFRESH_SECRET`, 만료시간, `PORT`가 명시되어 있다
+  - **테스트**: `backend/src/__tests__/health.test.js`, `errorHandler.test.js` — Jest+Supertest, 2 suites 5 tests 전부 통과, 커버리지(서버 진입점 `server.js` 제외) `app.js`/`pool.js`/`errorHandler.js` 문장 커버리지 100%
 
 ### BE-2. 인증 (회원가입/로그인/토큰 재발급)
 - **선행 Task**: BE-1
@@ -191,3 +192,4 @@ flowchart TB
 | v1.3 | 2026-08-13 | 관리자 계정 1건 시드 완료 반영 (`003_seed_admin.sql`), DB-3 체크박스 갱신 |
 | v1.4 | 2026-08-13 | docs 전체 재검토: BE-1 완료조건의 환경변수명을 실제 `.env`와 동일한 `DB_CONN_STRING`으로 수정 |
 | v1.5 | 2026-08-13 | DB-1: 전용 DB 미생성 항목을 "기본 postgres DB 사용 확정"으로 변경, DB-1 전체 완료 |
+| v1.6 | 2026-08-13 | BE-1 완료: app.js/server.js/pool.js/errorHandler.js/package.json/.env.example 구현, Jest+Supertest 테스트 5건 통과(핵심 파일 커버리지 100%), 체크박스 전체 반영 |
