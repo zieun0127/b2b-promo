@@ -8,6 +8,8 @@ const authRoutes = require('./routes/auth.routes');
 const mbtiQuestionRoutes = require('./routes/mbtiQuestion.routes');
 const testSubmissionRoutes = require('./routes/testSubmission.routes');
 const adminRoutes = require('./routes/admin.routes');
+const promotionOfferRoutes = require('./routes/promotionOffer.routes');
+const bookmarkRoutes = require('./routes/bookmark.routes');
 
 const app = express();
 
@@ -29,6 +31,8 @@ app.use('/api/auth', authRoutes);
 app.use('/api/mbti-questions', mbtiQuestionRoutes);
 app.use('/api/test-submissions', testSubmissionRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/promotion-offers', promotionOfferRoutes);
+app.use('/api/bookmarks', bookmarkRoutes);
 
 app.use((req, res, next) => next(new AppError('Not Found', 404)));
 

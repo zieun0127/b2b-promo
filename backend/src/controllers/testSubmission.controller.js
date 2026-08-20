@@ -21,4 +21,13 @@ async function getLatest(req, res, next) {
   }
 }
 
-module.exports = { submit, getLatest };
+async function getHistory(req, res, next) {
+  try {
+    const result = await testSubmissionService.getAllForUser(req.user.id);
+    res.status(200).json(result);
+  } catch (err) {
+    next(err);
+  }
+}
+
+module.exports = { submit, getLatest, getHistory };

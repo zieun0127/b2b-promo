@@ -202,3 +202,81 @@ describe('GET /api/test-submissions/me/latest', () => {
     expect(resA.body.user_id).not.toBe(userB.userId);
   });
 });
+
+describe('GET /api/test-submissions/me', () => {
+  async function signupAndLogin(tag) {
+    const email = uniqueEmail(tag);
+    const password = 'password123';
+    await request(app).post('/api/auth/signup').send({ email, password });
+    const loginRes = await request(app).post('/api/auth/login').send({ email, password });
+    const accessToken = loginRes.body.access_token;
+    const id = loginRes.body.user.id;
+    createdUserIds.push(id);
+    return { accessToken, userId: id };
+  }
+
+  it('returns 401 without an Authorization header', async () => {
+    const res = await request(app).get('/api/test-submissions/me');
+
+    expect(res.status).toBe(401);
+  });
+
+  it('returns an empty array for a user with no completed submissions', async () => {
+    const { accessToken } = await signupAndLogin('history-none');
+
+    const res = await request(app)
+      .get('/api/test-submissions/me')
+      .set('Authorization', `Bearer ${accessToken}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual([]);
+  });
+
+  it('returns all completed submissions ordered by submitted_at descending, without intercepting /me/latest', async () => {
+    const { accessToken, userId } = await signupAndLogin('history-two');
+    const answers1 = await buildAnswers(accessToken);
+    const first = await request(app)
+      .post('/api/test-submissions')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ answers: answers1 });
+
+    const answers2 = await buildAnswers(accessToken);
+    const second = await request(app)
+      .post('/api/test-submissions')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ answers: answers2 });
+
+    const historyRes = await request(app)
+      .get('/api/test-submissions/me')
+      .set('Authorization', `Bearer ${accessToken}`);
+    const latestRes = await request(app)
+      .get('/api/test-submissions/me/latest')
+      .set('Authorization', `Bearer ${accessToken}`);
+
+    expect(historyRes.status).toBe(200);
+    expect(historyRes.body).toHaveLength(2);
+    expect(historyRes.body[0].id).toBe(second.body.id);
+    expect(historyRes.body[1].id).toBe(first.body.id);
+    expect(historyRes.body.every((s) => s.user_id === userId)).toBe(true);
+
+    expect(latestRes.status).toBe(200);
+    expect(latestRes.body.id).toBe(second.body.id);
+  });
+
+  it('does not leak another user\'s history', async () => {
+    const userA = await signupAndLogin('history-a');
+    const userB = await signupAndLogin('history-b');
+    const answers = await buildAnswers(userA.accessToken);
+    await request(app)
+      .post('/api/test-submissions')
+      .set('Authorization', `Bearer ${userA.accessToken}`)
+      .send({ answers });
+
+    const resB = await request(app)
+      .get('/api/test-submissions/me')
+      .set('Authorization', `Bearer ${userB.accessToken}`);
+
+    expect(resB.status).toBe(200);
+    expect(resB.body).toEqual([]);
+  });
+});

@@ -23,4 +23,15 @@ async function findLatestByUserId(userId) {
   return rows[0] || null;
 }
 
-module.exports = { create, findLatestByUserId };
+async function findAllByUserId(userId) {
+  const { rows } = await pool.query(
+    `SELECT id, user_id, submitted_at, ei_value, sn_value, tf_value, jp_value, mbti_result_type_code, status
+       FROM test_submissions
+      WHERE user_id = $1 AND status = 'COMPLETED'
+      ORDER BY submitted_at DESC`,
+    [userId]
+  );
+  return rows;
+}
+
+module.exports = { create, findLatestByUserId, findAllByUserId };

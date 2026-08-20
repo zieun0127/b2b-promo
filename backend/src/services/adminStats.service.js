@@ -2,7 +2,7 @@ const adminStatsDb = require('../db/adminStats.db');
 
 const INDICATOR_ORDER = { EI: ['E', 'I'], SN: ['S', 'N'], TF: ['T', 'F'], JP: ['J', 'P'] };
 
-function computeStats({ totalCompleted, resultTypeCounts, indicatorCounts }) {
+function computeStats({ totalCompleted, resultTypeCounts, indicatorCounts, promotionStats = [] }) {
   const ratio = (count, total) => (total === 0 ? 0 : count / total);
 
   const by_result_type = resultTypeCounts.map(({ type_code, count }) => ({
@@ -20,12 +20,20 @@ function computeStats({ totalCompleted, resultTypeCounts, indicatorCounts }) {
     })),
   }));
 
-  return { total_completed_submissions: totalCompleted, by_result_type, by_indicator };
+  const by_promotion = promotionStats.map(({ id, name, recommended_match_count, bookmark_count }) => ({
+    id,
+    name,
+    recommended_match_count,
+    bookmark_count,
+  }));
+
+  return { total_completed_submissions: totalCompleted, by_result_type, by_indicator, by_promotion };
 }
 
 async function getStats() {
   const raw = await adminStatsDb.getTotalAndIndicatorCounts();
   const resultTypeCounts = await adminStatsDb.getResultTypeCounts();
+  const promotionStats = await adminStatsDb.getPromotionStats();
   return computeStats({
     totalCompleted: raw.total,
     resultTypeCounts,
@@ -35,6 +43,7 @@ async function getStats() {
       TF: { T: raw.tf_t, F: raw.tf_f },
       JP: { J: raw.jp_j, P: raw.jp_p },
     },
+    promotionStats,
   });
 }
 

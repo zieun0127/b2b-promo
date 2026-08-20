@@ -52,5 +52,14 @@ describe('GET /api/admin/stats', () => {
     res.body.by_indicator.forEach((indicator) => {
       expect(indicator.traits).toHaveLength(2);
     });
+    expect(Array.isArray(res.body.by_promotion)).toBe(true);
+    res.body.by_promotion.forEach((promotion) => {
+      expect(promotion).toMatchObject({
+        id: expect.any(String),
+        name: expect.any(String),
+        recommended_match_count: expect.any(Number),
+        bookmark_count: expect.any(Number),
+      });
+    });
   });
 });

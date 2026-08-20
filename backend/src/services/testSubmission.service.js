@@ -54,4 +54,9 @@ async function getLatestForUser(userId) {
   return buildResultDetail(row);
 }
 
-module.exports = { submit, buildResultDetail, getLatestForUser };
+async function getAllForUser(userId) {
+  const rows = await testSubmissionDb.findAllByUserId(userId);
+  return Promise.all(rows.map(buildResultDetail));
+}
+
+module.exports = { submit, buildResultDetail, getLatestForUser, getAllForUser };

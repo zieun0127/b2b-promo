@@ -6,5 +6,6 @@ const router = express.Router();
 
 router.post('/', requireAuth, testSubmissionController.submit);
 router.get('/me/latest', requireAuth, testSubmissionController.getLatest);
+router.get('/me', requireAuth, testSubmissionController.getHistory);
 
 module.exports = router;

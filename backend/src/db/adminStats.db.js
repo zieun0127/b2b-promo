@@ -30,4 +30,18 @@ async function getResultTypeCounts() {
   return rows;
 }
 
-module.exports = { getTotalAndIndicatorCounts, getResultTypeCounts };
+async function getPromotionStats() {
+  const { rows } = await pool.query(`
+    SELECT
+      po.id, po.name,
+      (SELECT COUNT(*)::int FROM test_submissions s
+         JOIN mbti_result_type_promotion_offers m ON m.mbti_result_type_code = s.mbti_result_type_code
+        WHERE m.promotion_offer_id = po.id AND s.status = 'COMPLETED') AS recommended_match_count,
+      (SELECT COUNT(*)::int FROM bookmarks bk WHERE bk.promotion_offer_id = po.id) AS bookmark_count
+    FROM promotion_offers po
+    ORDER BY po.created_at DESC
+  `);
+  return rows;
+}
+
+module.exports = { getTotalAndIndicatorCounts, getResultTypeCounts, getPromotionStats };

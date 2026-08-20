@@ -34,6 +34,45 @@ describe('computeStats', () => {
       ...result.by_indicator.flatMap((i) => i.traits.map((t) => t.ratio)),
     ];
     expect(allRatios.every((r) => Number.isFinite(r))).toBe(true);
+
+    expect(result.by_promotion).toEqual([]);
+  });
+
+  it('defaults by_promotion to an empty array when there are no promotions', () => {
+    const result = computeStats({
+      totalCompleted: 0,
+      resultTypeCounts: TYPE_CODES.map((type_code) => ({ type_code, count: 0 })),
+      indicatorCounts: {
+        EI: { E: 0, I: 0 },
+        SN: { S: 0, N: 0 },
+        TF: { T: 0, F: 0 },
+        JP: { J: 0, P: 0 },
+      },
+    });
+
+    expect(result.by_promotion).toEqual([]);
+  });
+
+  it('passes through per-promotion recommended match and bookmark counts', () => {
+    const result = computeStats({
+      totalCompleted: 5,
+      resultTypeCounts: TYPE_CODES.map((type_code) => ({ type_code, count: 0 })),
+      indicatorCounts: {
+        EI: { E: 0, I: 0 },
+        SN: { S: 0, N: 0 },
+        TF: { T: 0, F: 0 },
+        JP: { J: 0, P: 0 },
+      },
+      promotionStats: [
+        { id: 'promo-1', name: '프로모션 A', recommended_match_count: 3, bookmark_count: 7 },
+        { id: 'promo-2', name: '프로모션 B', recommended_match_count: 0, bookmark_count: 0 },
+      ],
+    });
+
+    expect(result.by_promotion).toEqual([
+      { id: 'promo-1', name: '프로모션 A', recommended_match_count: 3, bookmark_count: 7 },
+      { id: 'promo-2', name: '프로모션 B', recommended_match_count: 0, bookmark_count: 0 },
+    ]);
   });
 
   it('produces ratios that sum to 1 for an arbitrary distribution', () => {
