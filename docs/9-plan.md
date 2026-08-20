@@ -76,44 +76,50 @@ flowchart TB
 - **선행 Task**: BE-1
 - **작업**: `auth` 라우트·컨트롤러·서비스, `user.db.js`, bcrypt 해시, JWT Access/Refresh 발급 및 검증, `requireAuth`/`requireAdmin` 미들웨어
 - **완료 조건**
-  - [ ] `POST /api/auth/signup`으로 계정이 생성되고 비밀번호가 해시로 저장된다
-  - [ ] `POST /api/auth/login`이 Access/Refresh Token을 반환한다
-  - [ ] `POST /api/auth/refresh`가 Refresh Token으로 새 Access Token을 발급한다 (DB 저장 없이 stateless 검증)
-  - [ ] 토큰 없이 보호 API 호출 시 401, `role=USER`가 관리자 API 호출 시 403이 반환된다
+  - [x] `POST /api/auth/signup`으로 계정이 생성되고 비밀번호가 해시로 저장된다 (`auth.test.js`: 201 응답에 password/password_hash 미노출 확인, 이메일 중복 409, 형식오류/누락 400)
+  - [x] `POST /api/auth/login`이 Access/Refresh Token을 반환한다 (`access_token`/`refresh_token`/`user` 확인, 시드된 관리자 계정으로도 로그인 검증)
+  - [x] `POST /api/auth/refresh`가 Refresh Token으로 새 Access Token을 발급한다 (DB 저장 없이 stateless 검증) (위조/만료 토큰 401 확인)
+  - [x] 토큰 없이 보호 API 호출 시 401, `role=USER`가 관리자 API 호출 시 403이 반환된다 (`requireAuth`/`requireAdmin` 미들웨어 단위 테스트로 검증 — 통합 레벨 403은 BE-6에서 실제 보호 라우트로 재확인 예정, 지금 더미 라우트는 만들지 않음)
+  - **테스트**: `backend/src/__tests__/auth.test.js`, `requireAuth.test.js`, `requireAdmin.test.js` — 5 suites 21 tests 전부 통과, 커버리지 전체 98.26% stmts(목표 90% 초과), `auth.service.js`만 94.28%(edge case 2줄 미커버, 완료조건에는 영향 없음)
 
 ### BE-3. MBTI 문항 조회 API
 - **선행 Task**: BE-2
-- **작업**: `mbtiQuestion` 라우트·컨트롤러·`mbtiQuestion.db.js`
+- **작업**: `mbtiQuestion` 라우트·컨트롤러·서비스·`mbtiQuestion.db.js` (레이어 원칙 준수를 위해 얇은 service 포함)
 - **완료 조건**
-  - [ ] `GET /api/mbti-questions`가 12문항을 반환한다
-  - [ ] 인증된 사용자만 호출 가능하다 (미인증 시 401)
+  - [x] `GET /api/mbti-questions`가 12문항을 반환한다 (`mbtiQuestion.test.js`: 200 응답 배열 길이 12, `id`/`content`/`target_indicator`/`yes_trait_value` 필드·enum 검증, `ORDER BY id`로 재호출 시 순서 동일함까지 확인)
+  - [x] 인증된 사용자만 호출 가능하다 (미인증 시 401) (헤더 없음/위조 토큰 각각 401 확인, 기존 `requireAuth` 미들웨어 재사용)
+  - **테스트**: `backend/src/__tests__/mbtiQuestion.test.js` — 전체 6 suites 26 tests 통과, 커버리지 97.14% (목표 90% 초과)
 
 ### BE-4. MBTI 판정 및 제출 API
 - **선행 Task**: BE-2, DB-3
 - **작업**: `mbtiJudge.service.js`(지표 4개 판정 → 16유형 결정), `testSubmission.service.js`/`.db.js`, 제출 API. 12문항 미충족 요청은 400 처리
 - **완료 조건**
-  - [ ] `POST /api/test-submissions`가 12문항 답변을 받아 유형을 판정하고 `status='COMPLETED'`로 저장한다
-  - [ ] 답변이 12개 미만이면 400을 반환하고 아무 행도 저장되지 않는다
-  - [ ] 동일 사용자가 재제출하면 기존 행을 덮어쓰지 않고 새 행이 누적된다
-  - [ ] `mbtiJudge.service.js` 단위 테스트가 최소 3케이스(전부 예 / 전부 아니오 / 혼합) 통과한다
+  - [x] `POST /api/test-submissions`가 12문항 답변을 받아 유형을 판정하고 `status='COMPLETED'`로 저장한다 (201 응답에 `mbti_result_type`/`promotion_offers`까지 조립되어 포함됨, swagger `TestSubmissionResult`와 일치)
+  - [x] 답변이 12개 미만이면 400을 반환하고 아무 행도 저장되지 않는다 (11개 제출 → 400 확인 후 `test_submissions` count 0 확인)
+  - [x] 동일 사용자가 재제출하면 기존 행을 덮어쓰지 않고 새 행이 누적된다 (2회 제출 후 count 2 확인)
+  - [x] `mbtiJudge.service.js` 단위 테스트가 최소 3케이스(전부 예 / 전부 아니오 / 혼합) 통과한다 (ESTJ/INFP/ENTP 3케이스)
+  - **테스트**: `mbtiJudge.service.test.js`, `testSubmission.test.js` — 전체 8 suites 33 tests 통과, 커버리지 97.08% (목표 90% 초과)
+  - **참고**: 결과 조립 로직(`testSubmission.service.js`의 `buildResultDetail`)과 `mbtiResultType.db.js`/`promotionOffer.db.js`를 BE-5에서 그대로 재사용하도록 설계해둠
 
 ### BE-5. 결과·마이페이지 조회 API
 - **선행 Task**: BE-4
 - **작업**: 제출 결과 상세 조회 및 최근 결과 조회. `test_submissions.mbti_result_type_code`로 `mbti_result_types`를 조인해 유형 설명·장사 TIP을, 조인 테이블(`mbti_result_type_promotion_offers`)을 경유해 추천 프로모션까지 응답 객체(`mbti_result_type`)로 구성해 반환 (`docs/swagger.json`의 `TestSubmissionResult` 스키마 참조)
 - **완료 조건**
-  - [ ] `GET /api/test-submissions/me/latest`가 본인의 가장 최근 완료 결과를 반환한다
-  - [ ] 응답에 MBTI 유형 코드, 유형 설명, 장사 TIP, 추천 프로모션 목록이 포함된다
-  - [ ] 참여 이력이 없는 사용자는 404 또는 빈 응답으로 구분되어 처리된다
-  - [ ] 타인의 제출 결과는 조회되지 않는다
+  - [x] `GET /api/test-submissions/me/latest`가 본인의 가장 최근 완료 결과를 반환한다 (`ORDER BY submitted_at DESC LIMIT 1`, 2회 제출 후 마지막 건 반환 확인)
+  - [x] 응답에 MBTI 유형 코드, 유형 설명, 장사 TIP, 추천 프로모션 목록이 포함된다 (BE-4의 `buildResultDetail` 재사용)
+  - [x] 참여 이력이 없는 사용자는 404 또는 빈 응답으로 구분되어 처리된다 (404 확정, swagger 스펙과 일치: `완료된 테스트 참여 이력이 없습니다.`)
+  - [x] 타인의 제출 결과는 조회되지 않는다 (`WHERE user_id=$1`을 항상 `req.user.id`로만 바인딩, A/B 두 사용자로 교차 검증)
+  - **테스트**: `testSubmission.test.js`에 신규 describe 블록 5케이스 추가 — 전체 8 suites 38 tests 통과, 커버리지 97.23% (목표 90% 초과)
 
 ### BE-6. 관리자 통계 API
 - **선행 Task**: BE-4
 - **작업**: `adminStats.service.js` — 전체 참여자 수, 16유형별 수/비율, 4지표별 비율 집계. `requireAdmin` 적용
 - **완료 조건**
-  - [ ] `GET /api/admin/stats`가 전체 참여 수, 유형별 수/비율, 지표별 비율을 한 번에 반환한다
-  - [ ] `status='IN_PROGRESS'` 행은 집계에서 제외된다
-  - [ ] `role=ADMIN`만 호출 가능하다 (USER는 403)
-  - [ ] 집계 로직 단위 테스트가 통과한다 (비율 합계 100% 검증 포함, 참여 0건일 때 0으로 나누기 미발생)
+  - [x] `GET /api/admin/stats`가 전체 참여 수, 유형별 수/비율, 지표별 비율을 한 번에 반환한다 (`total_completed_submissions`, `by_result_type` 16개, `by_indicator` 4개×traits 2개 확인)
+  - [x] `status='IN_PROGRESS'` 행은 집계에서 제외된다 (모든 집계 쿼리 `WHERE`/`ON` 절에 `status='COMPLETED'` 조건 적용)
+  - [x] `role=ADMIN`만 호출 가능하다 (USER는 403) (`requireAuth` → `requireAdmin` 순서로 체이닝, 미인증 401·권한부족 403 분리 확인)
+  - [x] 집계 로직 단위 테스트가 통과한다 (비율 합계 100% 검증 포함, 참여 0건일 때 0으로 나누기 미발생) (`computeStats` 순수 함수, 0건 픽스처+임의 분포 픽스처 각각 검증)
+  - **테스트**: `adminStats.service.test.js`, `admin.test.js` — 전체 10 suites 43 tests 통과, 커버리지 97.22% (목표 90% 초과)
 
 ---
 
@@ -193,3 +199,8 @@ flowchart TB
 | v1.4 | 2026-08-13 | docs 전체 재검토: BE-1 완료조건의 환경변수명을 실제 `.env`와 동일한 `DB_CONN_STRING`으로 수정 |
 | v1.5 | 2026-08-13 | DB-1: 전용 DB 미생성 항목을 "기본 postgres DB 사용 확정"으로 변경, DB-1 전체 완료 |
 | v1.6 | 2026-08-13 | BE-1 완료: app.js/server.js/pool.js/errorHandler.js/package.json/.env.example 구현, Jest+Supertest 테스트 5건 통과(핵심 파일 커버리지 100%), 체크박스 전체 반영 |
+| v1.7 | 2026-08-15 | BE-2 완료: auth 라우트/컨트롤러/서비스/user.db.js, requireAuth/requireAdmin 미들웨어 구현, 테스트 21건 통과(커버리지 98.26%), 체크박스 전체 반영 |
+| v1.8 | 2026-08-15 | BE-3 완료: mbtiQuestion 라우트/컨트롤러/서비스/db.js 구현, 테스트 26건 통과(커버리지 97.14%), 체크박스 전체 반영 |
+| v1.9 | 2026-08-15 | BE-4 완료: mbtiJudge.service.js(판정 로직), testSubmission 라우트/컨트롤러/서비스/db.js, mbtiResultType.db.js, promotionOffer.db.js 구현, 테스트 33건 통과(커버리지 97.08%), 체크박스 전체 반영 |
+| v1.10 | 2026-08-15 | BE-5 완료: testSubmission.db/service/controller/routes에 findLatestByUserId/getLatestForUser/getLatest/GET me/latest 추가(buildResultDetail 재사용), 테스트 38건 통과(커버리지 97.23%), 체크박스 전체 반영 |
+| v1.11 | 2026-08-15 | BE-6 완료: adminStats.db/service.js(순수 computeStats 함수), admin.controller/routes.js(requireAuth+requireAdmin 체이닝) 구현, 테스트 43건 통과(커버리지 97.22%), 체크박스 전체 반영 |

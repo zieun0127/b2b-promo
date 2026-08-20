@@ -1,9 +1,4 @@
-class AppError extends Error {
-  constructor(message, status) {
-    super(message);
-    this.status = status;
-  }
-}
+const { AppError } = require('../errors');
 
 function errorHandler(err, req, res, next) {
   const status = err.status || 500;

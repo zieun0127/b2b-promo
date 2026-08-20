@@ -4,19 +4,22 @@
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
     "test": "jest",
     "test:coverage": "jest --coverage"
   },
   "dependencies": {
-    "express": "^4",
-    "pg": "^8",
-    "jsonwebtoken": "^9",
     "bcrypt": "^5",
     "cors": "^2",
-    "dotenv": "^16"
+    "dotenv": "^16",
+    "express": "^4",
+    "jsonwebtoken": "^9",
+    "pg": "^8",
+    "swagger-ui-express": "^5.0.1"
   },
   "devDependencies": {
     "jest": "^29",
+    "nodemon": "^3.1.14",
     "supertest": "^6"
   }
 }

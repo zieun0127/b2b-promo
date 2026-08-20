@@ -52,13 +52,14 @@ route → controller → service → db(pg 쿼리)
 
 ## 5. 설정/보안/운영 원칙
 
-- **환경변수**: `.env` 파일(gitignore 처리)로 관리. 필수 항목: `DB_CONN_STRING`, `JWT_ACCESS_SECRET`, `JWT_REFRESH_SECRET`, `ACCESS_TOKEN_EXPIRES_IN`, `REFRESH_TOKEN_EXPIRES_IN`, `PORT`. 개발용 관리자 계정 시드에 쓰인 `ADMIN_SEED_EMAIL`/`ADMIN_SEED_PASSWORD`(`backend/src/migrations/003_seed_admin.sql` 참조)도 이미 `backend/.env`에 있다. `.env.example`을 함께 커밋해 실행 방법을 문서화한다(비밀값은 빈 문자열/예시로만 채움).
+- **환경변수**: `.env` 파일(gitignore 처리)로 관리. 필수 항목: `DB_CONN_STRING`, `JWT_ACCESS_SECRET`, `JWT_REFRESH_SECRET`, `ACCESS_TOKEN_EXPIRES_IN`, `REFRESH_TOKEN_EXPIRES_IN`, `PORT`, `FRONTEND_ORIGIN`, `NODE_ENV`. 개발용 관리자 계정 시드에 쓰인 `ADMIN_SEED_EMAIL`/`ADMIN_SEED_PASSWORD`(`backend/src/migrations/003_seed_admin.sql` 참조)도 이미 `backend/.env`에 있다. `.env.example`을 함께 커밋해 실행 방법을 문서화한다(비밀값은 빈 문자열/예시로만 채움).
+- **API 문서(Swagger UI)**: `NODE_ENV !== 'production'`일 때만 `/api-docs` 경로에 `docs/swagger.json` 기반 Swagger UI를 노출한다(`NODE_ENV=production`이면 라우트 자체가 등록되지 않음).
 - **JWT 인증(PRD 5절 반영)**:
   - Access Token(짧은 만료)은 매 요청 `Authorization: Bearer` 헤더로 전달, 인증 미들웨어에서 검증 후 `req.user`에 `{ id, role }` 주입.
   - Refresh Token(긴 만료)은 서버 DB에 저장하지 않고 stateless로만 검증(도메인 정의서/PRD 확정 사항). 재발급 전용 엔드포인트(`POST /api/auth/refresh`) 하나만 둔다.
   - 비밀번호는 bcrypt로 해시 저장. 평문 비교/자체 해시 구현 금지.
 - **역할 기반 접근 제어**: `requireAuth`, `requireAdmin` 두 개의 미들웨어만 둔다(권한 체계를 세분화하지 않음 — role은 USER/ADMIN 2종뿐).
-- **CORS**: 프론트엔드 배포 origin만 허용 리스트에 등록(개발 중엔 `http://localhost:*` 허용).
+- **CORS**: `FRONTEND_ORIGIN` 환경변수 값만 허용(개발 중엔 `http://localhost:5173`, 배포 시 프론트엔드 실제 origin으로 교체).
 - **에러 핸들링**: Express 전역 에러 핸들러 1개로 통일. 컨트롤러에서 발생한 에러는 `next(err)`로 넘기고, 전역 핸들러가 `{ message, status }` 형태 JSON으로 응답. 커스텀 에러 클래스는 `AppError` 1종만 두고(에러 코드 체계 세분화 금지), HTTP status로 구분한다.
 - **비밀정보 관리**: JWT 시크릿/DB 접속정보는 코드에 하드코딩하지 않고 환경변수로만 주입. 저장소에 커밋 금지.
 
@@ -152,3 +153,5 @@ backend/
 | v1.0 | 2026-08-13 | 초안 작성 |
 | v1.1 | 2026-08-13 | ERD/스키마와 정합성 검토 반영: 3절 컬럼명 예시를 `mbti_result_type_code`로 수정, 7절 `promotionOffer.db.js`에 조인 테이블 처리 주석 추가 |
 | v1.2 | 2026-08-13 | 실제 DB 작업 결과와 정합성 검토 반영: 5절 환경변수명을 실제 `.env`와 동일한 `DB_CONN_STRING`으로 수정 및 관리자 시드 변수 언급 추가, 7절 migrations 디렉토리 트리에 002/003 시드 파일 반영 |
+| v1.3 | 2026-08-15 | CORS를 `cors()` 전체 허용에서 `FRONTEND_ORIGIN` 환경변수 기반 제한으로 변경, 5절 필수 환경변수 목록에 `FRONTEND_ORIGIN` 추가 |
+| v1.4 | 2026-08-20 | `/api-docs`에 Swagger UI 적용(개발 환경 전용, `NODE_ENV=production`에서 비활성화), 5절 필수 환경변수 목록에 `NODE_ENV` 추가 |
