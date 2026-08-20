@@ -41,21 +41,28 @@ flowchart LR
         SignupPage
         MbtiTestPage["MbtiTestPage (FR-1)"]
         ResultPage["ResultPage (FR-1)"]
-        MyPage["MyPage (FR-1)"]
+        MyPage["MyPage (FR-1, FR-3)"]
+        PromotionListPage["PromotionListPage (FR-3)"]
         AdminStatsPage["AdminStatsPage (FR-2)"]
+        AdminPromotionManagePage["AdminPromotionManagePage (FR-4)"]
     end
 
     subgraph Components["components/"]
         QuestionCard
         ResultSummary
         StatsChart
+        PromotionCard
     end
 
     subgraph Hooks["hooks/ (TanStack Query)"]
-        useMbtiQuestions
-        useSubmitTest
+        useMbtiTest["useMbtiTest (useMbtiQuestions/useSubmitTest)"]
         useMyLatestResult
+        useMyHistory
+        usePromotions
+        useBookmarks
+        useToggleBookmark
         useAdminStats
+        useAdminPromotions
     end
 
     subgraph StoreApi["store/ · api/"]
@@ -64,20 +71,31 @@ flowchart LR
     end
 
     MbtiTestPage --> QuestionCard
-    MbtiTestPage --> useMbtiQuestions
-    MbtiTestPage --> useSubmitTest
+    MbtiTestPage --> useMbtiTest
     ResultPage --> ResultSummary
     MyPage --> ResultSummary
     MyPage --> useMyLatestResult
+    MyPage --> useMyHistory
+    MyPage --> useBookmarks
+    MyPage --> useToggleBookmark
+    PromotionListPage --> PromotionCard
+    PromotionListPage --> usePromotions
+    PromotionListPage --> useToggleBookmark
     AdminStatsPage --> StatsChart
     AdminStatsPage --> useAdminStats
+    AdminPromotionManagePage --> useAdminPromotions
 
     LoginPage --> authStore
+    LoginPage --> useMyLatestResult
     SignupPage --> authStore
-    useMbtiQuestions --> apiClient
-    useSubmitTest --> apiClient
+    useMbtiTest --> apiClient
     useMyLatestResult --> apiClient
+    useMyHistory --> apiClient
+    usePromotions --> apiClient
+    useBookmarks --> apiClient
+    useToggleBookmark --> apiClient
     useAdminStats --> apiClient
+    useAdminPromotions --> apiClient
     authStore --> apiClient
 ```
 
@@ -94,7 +112,7 @@ flowchart LR
 | controller | req/res 파싱 및 service 호출, 비즈니스 로직 없음 |
 | service | MBTI 판정, 통계 집계, JWT 발급/검증 등 실제 비즈니스 로직 |
 | db | pg 쿼리 실행 (SQL은 이 계층에만 존재) |
-| PostgreSQL 17 | User, MbtiQuestion, MbtiResultType, PromotionOffer, TestSubmission 저장 |
+| PostgreSQL 17 | User, MbtiQuestion, MbtiResultType, PromotionOffer, TestSubmission, Bookmark 저장 |
 
 Refresh Token은 서버 DB에 저장하지 않고 stateless로 검증하며(`POST /api/auth/refresh`), 이 흐름도 API 클라이언트 ↔ route 사이에서 처리된다.
 
@@ -104,3 +122,5 @@ Refresh Token은 서버 DB에 저장하지 않고 stateless로 검증하며(`POS
 |---|---|---|
 | v1.0 | 2026-08-13 | 초안 작성 |
 | v1.1 | 2026-08-13 | 프론트엔드 컴포넌트 구조 다이어그램 추가 |
+| v1.2 | 2026-08-20 | 지속 재방문 강화 기획(FR-3/FR-4) 반영: PromotionListPage, AdminPromotionManagePage, PromotionCard, usePromotions/useBookmarks/useMyHistory/useAdminPromotions 훅을 컴포넌트 구조 다이어그램에 추가 |
+| v1.3 | 2026-08-20 | 실제 구현과 정합성 검토 반영: `useMbtiQuestions`/`useSubmitTest`를 실제 파일 기준 `useMbtiTest` 1개로 정정, `useToggleBookmark` 노드 추가(MyPage/PromotionListPage에서 사용), 로그인 후 목적지 분기용 `LoginPage → useMyLatestResult` 엣지 추가 |

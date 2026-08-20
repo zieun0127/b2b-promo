@@ -1,5 +1,11 @@
 -- 사장님 MBTI DB 스키마 (PostgreSQL 17)
 -- 근거: docs/8-erd.md, docs/1-domain-definition.md
+--
+-- [성격] 이 파일은 "현재 스키마의 전체 스냅샷"이다 — 신규 환경을 한 번에 세팅하는 용도.
+--        실제 적용 이력은 backend/src/migrations/00N_*.sql 증분 파일이 담당하며,
+--        001_init.sql은 최초 생성 당시 상태로 동결되어 있어 이 파일과 일치하지 않는다(정상).
+--        예: promotion_offers.created_at/ends_at과 bookmarks 테이블은 004_add_promotion_bookmark.sql에서 추가됨.
+--        스키마 변경 시 반드시 ①새 마이그레이션 파일 추가 + ②이 스냅샷 갱신을 함께 할 것 (docs/9-plan.md DB-2 참조)
 
 CREATE TABLE users (
     id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -25,7 +31,9 @@ CREATE TABLE mbti_result_types (
 CREATE TABLE promotion_offers (
     id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name        VARCHAR(255) NOT NULL,
-    description TEXT NOT NULL
+    description TEXT NOT NULL,
+    created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+    ends_at     TIMESTAMPTZ  -- NULL이면 상시 프로모션(마감 없음)
 );
 
 CREATE TABLE mbti_result_type_promotion_offers (
@@ -57,3 +65,14 @@ CREATE TABLE test_submissions (
 -- 관리자 통계 집계(전체/유형별/지표별)가 완료 건 기준으로 자주 조회되므로 최소 인덱스만 추가
 CREATE INDEX idx_test_submissions_user_id ON test_submissions(user_id);
 CREATE INDEX idx_test_submissions_status ON test_submissions(status);
+
+-- 프로모션 관심 표시(북마크). 이력이 아닌 현재 상태만 저장하므로 복합 PK로 (user_id, promotion_offer_id) 유일성을 보장
+CREATE TABLE bookmarks (
+    user_id             UUID NOT NULL REFERENCES users(id),
+    promotion_offer_id  UUID NOT NULL REFERENCES promotion_offers(id),
+    created_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
+    PRIMARY KEY (user_id, promotion_offer_id)
+);
+
+-- 프로모션별 북마크 수 집계(인기 TOP3, 관리자 통계)가 자주 조회되므로 인덱스 추가
+CREATE INDEX idx_bookmarks_promotion_offer_id ON bookmarks(promotion_offer_id);

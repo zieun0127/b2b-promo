@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="700" viewBox="0 0 960 700" font-family="-apple-system, 'Segoe UI', 'Malgun Gothic', sans-serif">
+  <!-- 페이지 배경 (10-style.md 1절: 배경 연회색 #F0F1F4) -->
+  <rect x="0" y="0" width="960" height="700" fill="#F0F1F4"/>
+
+  <!-- 결과 카드 (10-style.md 3-2: 흰 배경, 옅은 테두리, radius 8) -->
+  <rect x="280" y="40" width="400" height="600" rx="8" fill="#FFFFFF" stroke="#E3E5EA" stroke-width="1.5"/>
+
+  <!-- 화면 타이틀 (10-style.md 2절: 20px Bold) -->
+  <text x="480" y="82" font-size="20" font-weight="bold" text-anchor="middle" fill="#2B2F38">테스트 결과</text>
+
+  <!-- MBTI 유형 배지 (10-style.md 4절: Primary 배경, 흰 텍스트, radius 6, 20px) -->
+  <rect x="400" y="104" width="160" height="44" rx="6" fill="#1B2A4A"/>
+  <text x="480" y="132" font-size="20" font-weight="bold" text-anchor="middle" fill="#FFFFFF">ENFP</text>
+  <text x="480" y="170" font-size="14" text-anchor="middle" fill="#2B2F38">&quot;열정적인 홍보왕&quot; 유형</text>
+
+  <!-- 섹션: 유형 설명 (10-style.md 3-1: 네이비 섹션 헤더바, 높이 44) -->
+  <rect x="300" y="196" width="360" height="44" rx="4" fill="#1B2A4A"/>
+  <text x="316" y="224" font-size="16" font-weight="bold" fill="#FFFFFF">유형 설명</text>
+  <rect x="300" y="240" width="360" height="90" fill="#FFFFFF" stroke="#E3E5EA" stroke-width="1"/>
+  <text x="316" y="264" font-size="14" fill="#2B2F38">손님과의 소통을 즐기고 새로운 시도를</text>
+  <text x="316" y="286" font-size="14" fill="#2B2F38">두려워하지 않는 스타일입니다. 신메뉴나</text>
+  <text x="316" y="308" font-size="14" fill="#2B2F38">이벤트 홍보에서 강점을 발휘합니다.</text>
+
+  <!-- 섹션: 장사 TIP -->
+  <rect x="300" y="342" width="360" height="44" rx="4" fill="#1B2A4A"/>
+  <text x="316" y="370" font-size="16" font-weight="bold" fill="#FFFFFF">장사 TIP</text>
+  <rect x="300" y="386" width="360" height="70" fill="#FFFFFF" stroke="#E3E5EA" stroke-width="1"/>
+  <text x="316" y="410" font-size="14" fill="#2B2F38">• SNS 이벤트를 적극 활용하세요</text>
+  <text x="316" y="432" font-size="14" fill="#2B2F38">• 신메뉴 출시 주기를 짧게 유지하세요</text>
+
+  <!-- 섹션: 추천 프로모션 -->
+  <rect x="300" y="472" width="360" height="44" rx="4" fill="#1B2A4A"/>
+  <text x="316" y="500" font-size="16" font-weight="bold" fill="#FFFFFF">추천 프로모션</text>
+  <rect x="300" y="516" width="360" height="56" rx="8" fill="#FFFFFF" stroke="#E3E5EA" stroke-width="1"/>
+  <rect x="300" y="516" width="6" height="56" fill="#E8804A"/>
+  <text x="480" y="550" font-size="14" text-anchor="middle" fill="#2B2F38">SNS 인증샷 할인 쿠폰</text>
+
+  <!-- 버튼 (Primary 배경 + 흰 텍스트, radius 6) -->
+  <rect x="380" y="596" width="200" height="44" rx="6" fill="#1B2A4A"/>
+  <text x="480" y="623" font-size="14" font-weight="bold" text-anchor="middle" fill="#FFFFFF">마이페이지로 이동</text>
+
+  <!-- 하단 안내 -->
+  <text x="480" y="672" font-size="12" text-anchor="middle" fill="#8A8F98">사장님 MBTI · ResultPage (데스크탑) — docs/10-style.md 스타일 적용</text>
+</svg>
