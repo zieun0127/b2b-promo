@@ -22,9 +22,9 @@ export default function PromotionListPage() {
     return <div className="promotion-list-page auth-error">프로모션을 불러오지 못했습니다.</div>;
   }
 
-  const activeFilter =
-    selectedFilter ?? latestResult?.mbti_result_type.type_code ?? ALL_MBTI_FILTER;
-  const popular = pickTopByBookmarks(data);
+  const ownTypeCode = latestResult?.mbti_result_type.type_code ?? ALL_MBTI_FILTER;
+  const activeFilter = selectedFilter ?? ownTypeCode;
+  const popular = pickTopByBookmarks(filterByMbtiType(data, ownTypeCode));
   const filtered = sortByRecommendedThenDate(filterByMbtiType(data, activeFilter));
 
   return (

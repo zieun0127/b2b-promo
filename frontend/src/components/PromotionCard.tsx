@@ -18,6 +18,11 @@ export default function PromotionCard({ promotion, onToggleBookmark }: Promotion
         {showEndingSoonBadge && (
           <span className="badge badge--accent">마감임박(D-{daysUntil(promotion.ends_at as string)})</span>
         )}
+        {promotion.mbti_type_codes.map((code) => (
+          <span className="badge badge--type" key={code}>
+            {code}
+          </span>
+        ))}
       </div>
       <p className="promotion-name">{promotion.name}</p>
       <p className="promotion-description">{promotion.description}</p>

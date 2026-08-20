@@ -213,6 +213,29 @@ describe('PromotionListPage', () => {
     expect(within(top3After).getByText('ENFP용')).toBeInTheDocument();
   });
 
+  it('완료된 결과가 있으면 인기 프로모션 TOP3도 자신의 MBTI 유형 내에서만 집계된다', async () => {
+    mockLatestResult(makeResult('ISTJ'));
+    mockPromotions({
+      data: [
+        makePromotion({ id: 'a', name: 'ISTJ용', mbti_type_codes: ['ISTJ'], bookmark_count: 1 }),
+        makePromotion({ id: 'b', name: 'ENFP용', mbti_type_codes: ['ENFP'], bookmark_count: 100 }),
+      ],
+    });
+    const user = userEvent.setup();
+    render(<PromotionListPage />);
+
+    const top3 = screen.getByText('인기 프로모션 TOP3').nextElementSibling as HTMLElement;
+    expect(within(top3).getByText('ISTJ용')).toBeInTheDocument();
+    expect(within(top3).queryByText('ENFP용')).not.toBeInTheDocument();
+
+    // 목록 필터를 "전체"로 바꿔도 TOP3는 여전히 자신의 유형(ISTJ) 기준을 유지한다
+    await user.click(screen.getByRole('button', { name: '전체' }));
+
+    const top3After = screen.getByText('인기 프로모션 TOP3').nextElementSibling as HTMLElement;
+    expect(within(top3After).getByText('ISTJ용')).toBeInTheDocument();
+    expect(within(top3After).queryByText('ENFP용')).not.toBeInTheDocument();
+  });
+
   it('추천 프로모션이 목록 상단에 정렬되어 표시된다', () => {
     mockLatestResult(null);
     mockPromotions({

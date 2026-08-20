@@ -308,9 +308,15 @@ body {
 }
 
 .promotion-grid {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: 1fr;
   gap: 16px;
+}
+
+@media (min-width: 768px) {
+  .promotion-grid {
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  }
 }
 
 .promotion-top3-grid {
@@ -364,20 +370,14 @@ body {
 }
 
 .promotion-card {
-  flex: 1 1 100%;
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 
-@media (min-width: 768px) {
-  .promotion-card {
-    flex: 1 1 260px;
-  }
-}
-
 .promotion-card__badges {
   display: flex;
+  flex-wrap: wrap;
   gap: 4px;
 }
 
@@ -395,6 +395,10 @@ body {
 
 .badge--accent {
   background-color: var(--color-accent);
+}
+
+.badge--type {
+  background-color: var(--color-primary);
 }
 
 .promotion-card__footer {

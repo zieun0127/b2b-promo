@@ -88,4 +88,17 @@ describe('PromotionCard', () => {
 
     expect(screen.queryByRole('button')).not.toBeInTheDocument();
   });
+
+  it('매핑된 MBTI 유형마다 뱃지를 표시한다', () => {
+    render(<PromotionCard promotion={makePromotion({ mbti_type_codes: ['ENFP', 'ISTJ'] })} />);
+
+    expect(screen.getByText('ENFP')).toBeInTheDocument();
+    expect(screen.getByText('ISTJ')).toBeInTheDocument();
+  });
+
+  it('매핑된 MBTI 유형이 없으면 유형 뱃지를 표시하지 않는다', () => {
+    render(<PromotionCard promotion={makePromotion({ mbti_type_codes: [] })} />);
+
+    expect(screen.queryByText(/^[EI][SN][TF][JP]$/)).not.toBeInTheDocument();
+  });
 });
