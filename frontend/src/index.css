@@ -313,6 +313,7 @@ body {
 .promotion-list-page,
 .mypage {
   max-width: 960px;
+  margin: 0 auto;
 }
 
 .promotion-grid {
