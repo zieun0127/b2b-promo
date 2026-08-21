@@ -94,6 +94,15 @@ flowchart TB
   - [x] `docs/8-schema.sql` 스냅샷과 실제 DB 스키마가 일치한다 (`information_schema.columns`로 `promotion_offers`/`bookmarks` 전체 컬럼 대조 완료, 전날 미리 갱신해둔 스냅샷과 정확히 일치)
   - **작업 파일**: `backend/src/migrations/004_add_promotion_bookmark.sql` (ALTER/CREATE TABLE/CREATE INDEX + 기존 16건 날짜 보정 UPDATE 16건)
 
+### DB-6. 프로모션 데이터 추가 시드 (사용자 요청, 콘텐츠 다양화)
+
+- **선행 Task**: DB-3, DB-4(뱃지 날짜 분포 패턴 재사용)
+- **작업**: `backend/src/migrations/006_seed_more_promotions.sql` 작성·실행 — 기존 16개(유형:프로모션 1:1)에 유형당 1건씩 추가해 총 32개(유형:프로모션 1:2)로 확장. DB-4와 동일하게 신규 3건/마감임박 3건/상시 10건 날짜 분포를 재현(INSERT 시점에 `created_at`/`ends_at`을 바로 계산해 넣으므로 004처럼 별도 UPDATE 불필요).
+- **완료 조건**
+  - [x] `promotion_offers`가 32건, `mbti_result_type_promotion_offers`가 유형당 2건씩(16유형 × 2 = 32건)이다 (로컬/운영 DB 모두 실측 쿼리로 확인)
+  - [x] 로컬 dev DB와 운영(Supabase) DB 양쪽에 동일하게 반영된다 (양쪽에서 동일 SQL 실행 후 각각 카운트 확인)
+  - **작업 파일**: `backend/src/migrations/006_seed_more_promotions.sql`
+
 ---
 
 ## 2. 백엔드 (Node.js + Express + pg)
@@ -389,3 +398,4 @@ flowchart TB
 | v1.30 | 2026-08-21 | 사용자 요청 반영: "프로모션 목록" 필터를 16개 MBTI 유형별(v1.7)에서 "전체/신규/마감임박/상시" 4개 상태 버튼으로 교체(TOP3가 이미 MBTI로 개인화되어 있어 목록 필터와 기능 중복 판단, `filterByStatus` 순수 함수 신규, 기존 `filterByMbtiType`은 TOP3 개인화 계산에 계속 사용). 뱃지 3종 추가: "마감"(만료, `isEnded`, 도메인 정의서에 이미 문서화됐던 미구현 규칙을 채움)·"상시"(마감일 없음, `isAlwaysOpen`)·"인기"(TOP3 포함 항목, 목록 필터와 무관하게 항상 본인 유형 기준의 TOP3 id로 계산). `docs/1-domain-definition.md`(v1.9), `3-PRD.md`(v1.8), `7-wireframe.md`(v1.6), `10-style.md`(v1.6) 갱신. 전체 146 tests 통과, `promotionBadges.ts` 100%·`PromotionCard.tsx` 100%·`PromotionListPage.tsx` 95.23%. Playwright로 실제 DB 프로모션 1건의 마감일을 임시로 과거로 변경해 "마감" 뱃지 렌더 확인 후 원복, 상태 필터 4개 버튼 동작과 TOP3 불변 확인 |
 | v1.31 | 2026-08-21 | 사용자 요청 반영(v1.30 일부 롤백): 인기 프로모션 TOP3 각 카드에 순위 뱃지("1위"/"2위"/"3위") 추가(`PromotionCard.tsx`에 `rank` prop, `PromotionListPage.tsx`가 `index+1` 전달). "마감"/"상시" 뱃지(`isEnded`/`isAlwaysOpen`)와 "상시" 상태 필터 버튼 제거 — 사장님이 직접 등록·관리하는 정보라 마감 여부를 별도 표시할 실익이 낮다는 판단(상태 필터는 "전체"/"신규"/"마감임박" 3개로 축소). `docs/1-domain-definition.md`(v1.10), `3-PRD.md`(v1.9), `7-wireframe.md`(v1.7), `10-style.md`(v1.7) 갱신. 전체 138 tests 통과, `promotionBadges.ts`/`PromotionCard.tsx` 100%·`PromotionListPage.tsx` 95.23%, `tsc -b`·`oxlint` 통과. Playwright로 실제 데이터에서 TOP3 순위 뱃지(1위/2위/3위) 및 목록의 마감임박/신규/인기 뱃지 정상 표시, 마감/상시 뱃지 미노출 확인 |
 | v1.32 | 2026-08-21 | 사용자 요청 반영(서비스 활용성 강화): BE-11(프로모션 신청 API)·FE-10(신청 UI) 신규 Task 추가·완료. DB-5(`005_add_promotion_applications.sql`, bookmarks와 동일 구조의 `promotion_applications` 테이블) 신설, `POST/DELETE /api/applications`(멱등 토글)·관리자 전용 `GET /api/promotion-offers/:id/applicants`(email+applied_at) 추가, `promotion_offers` 목록 응답에 `application_count`/`is_applied` 추가. 프론트 `PromotionCard`에 "신청하기"/"신청완료" 버튼, `AdminPromotionManagePage`에 신청 수+`<details>` 기반 신청자 목록(지연 조회) 추가. 별도 연락처 입력 폼 없이 계정 email을 재사용해 관리자가 직접 연락하는 흐름 — 북마크(관심 표시)만 있던 "표시 전용" 구조를 관리자가 실제로 연락해 진행할 수 있는 액션으로 보강. `docs/1-domain-definition.md`(v1.11), `3-PRD.md`(v1.10), `8-erd.md`(v1.2), `8-schema.sql`, `swagger.json` 갱신. 백엔드 전체 14 suites 86 tests 통과(신규 파일 100%·컨트롤러 90%), 프론트 전체 21 files 151 tests 통과(`applicationApi.ts`/`PromotionCard.tsx` 100%), `tsc -b`·`oxlint` 통과 |
+| v1.33 | 2026-08-21 | 운영 배포 백엔드(`https://mbti-127-be.vercel.app`) 대상 API 레벨 E2E 테스트 수행(`docs/4-user-scenario.md` 시나리오 1~9 + 엣지 케이스 + 신청 기능, 33건 전부 PASS, `e2e/report-prod-api.md`). 테스트 중 프론트엔드가 아직 Vercel에 배포되지 않았고 `frontend/.env.production`의 `VITE_API_BASE_URL`에 오타(`mbit`→`mbti`)가 있었음을 발견해 로컬 파일 수정(Vercel 환경변수 반영은 사용자 몫). DB-6(`006_seed_more_promotions.sql`) 신규 Task 추가·완료: 사용자 요청으로 유형당 프로모션을 1개→2개로 늘려 로컬/운영 DB 모두 32건으로 확장(뱃지 날짜 분포는 DB-4와 동일 패턴 재사용) |
