@@ -64,6 +64,8 @@ export interface PromotionOfferListItem extends PromotionOffer {
   recommended: boolean;
   bookmark_count: number;
   is_bookmarked: boolean;
+  application_count: number;
+  is_applied: boolean;
 }
 
 export interface PromotionOfferInput {
@@ -76,6 +78,16 @@ export interface PromotionOfferInput {
 export interface Bookmark {
   promotion_offer_id: string;
   created_at: string;
+}
+
+export interface Application {
+  promotion_offer_id: string;
+  applied_at: string;
+}
+
+export interface Applicant {
+  email: string;
+  applied_at: string;
 }
 
 export interface TestSubmissionResult {

@@ -204,6 +204,18 @@ flowchart TB
   - [x] 기존 `by_result_type`/`by_indicator` 응답이 회귀 없이 그대로 동작한다 (BE-6 테스트 전부 통과 유지) (`computeStats` 기존 로직 미변경, 기존 admin.test.js/adminStats.service.test.js 케이스 전부 통과)
   - **테스트**: `adminStats.service.test.js`에 `by_promotion` 집계 케이스 추가(0건 픽스처 포함), `admin.test.js`에 `by_promotion` 필드 검증 추가 — 전체 13 suites 77 tests 통과, `adminStats.db.js`/`.service.js` 100% — 목표 90% 충족
 
+### BE-11. 프로모션 신청 API (v1.10 신규, 서비스 활용성 강화)
+- **선행 Task**: BE-7, BE-8(bookmark 패턴 재사용)
+- **작업**: DB-5(`005_add_promotion_applications.sql`, `promotion_applications` 테이블, bookmarks와 동일 구조) + `promotionApplication` 라우트·컨트롤러·서비스·db.js 신규(BE-8 bookmark 구현을 그대로 미러링) — `POST /api/applications`(멱등 등록), `DELETE /api/applications/:promotionOfferId`(멱등 해제). `promotionOffer.db.js`의 `LIST_COLUMNS`에 `application_count`/`is_applied` 추가(bookmark_count/is_bookmarked와 동일 패턴). 관리자 전용 `GET /api/promotion-offers/:id/applicants`(email+applied_at 목록, 신청일 내림차순) 추가 — 별도 연락처 입력 폼 없이 `users.email`을 그대로 반환해 관리자가 직접 연락하게 한다. `promotionOffer.db.js`의 `deleteById`에 `promotion_applications` 정리도 추가.
+- **완료 조건**
+  - [x] 동일 프로모션을 두 번 신청해도 중복 저장되지 않는다(멱등) (`promotionApplication.test.js`: 동일 사용자·동일 프로모션 2회 POST 모두 201, count 1건 확인)
+  - [x] 신청되지 않은 상태에서 취소를 요청해도 에러 없이 204를 반환한다(멱등) (신청 후 2회 연속 DELETE 모두 204 및 count 0 확인)
+  - [x] 신청/취소 후 `GET /api/promotion-offers`의 `application_count`/`is_applied`가 실제 상태와 일치한다 (등록 전 0/false → 등록 후 1/true → 해제 후 0/false 순서로 실측)
+  - [x] 존재하지 않는 프로모션 ID로 신청을 시도하면 404를 반환한다
+  - [x] `GET /api/promotion-offers/:id/applicants`는 관리자만 호출 가능하고(일반 사용자 403, 미인증 401), 신청자의 email/applied_at을 신청일 내림차순으로 반환한다(A/B 두 사용자 교차 검증) (`promotionApplication.test.js`)
+  - [x] 관리자가 프로모션을 삭제하면 연관된 Application도 함께 제거된다(FK 위반 없이 삭제 성공)
+  - **테스트**: `promotionApplication.test.js` 신규(bookmark.test.js 미러링 + 관리자 신청자 조회 케이스) — 전체 14 suites 86 tests 통과, 신규 파일 `promotionApplication.db.js`/`.service.js`/`.routes.js` 100%, `.controller.js` 90%(에러 콜백 분기만 미커버) — 목표 90% 충족
+
 ---
 
 ## 3. 프론트엔드 (React 19 + Zustand + TanStack Query)
@@ -303,6 +315,15 @@ flowchart TB
   - [x] `role=USER` 계정으로 접근 시 화면에 진입하지 못한다 (라우터에서 `/admin/promotions`를 `ProtectedRoute requiredRole="ADMIN"` 하위로 등록, 기존 `ProtectedRoute` 로직 그대로 재사용 — FE-5/FE-1부터 검증된 리다이렉트 동작과 동일)
   - **테스트**: `AdminPromotionManagePage.test.tsx`(목록 렌더/유형 미선택 저장 차단/서버 오류 표시/등록·수정·삭제 후 mutate 호출) — 전체 115 tests 통과, `AdminPromotionManagePage.tsx` 96.42% — 목표 90% 충족
 
+### FE-10. 프로모션 신청 UI (v1.10 신규, 서비스 활용성 강화)
+- **선행 Task**: FE-7, FE-9, BE-11
+- **작업**: `applicationApi.ts`/`useApplications.ts`(bookmark 훅 패턴 그대로 미러링), `PromotionCard.tsx`에 `onToggleApplication` prop 및 "신청하기"/"신청완료" 버튼 추가(북마크 버튼 옆). `PromotionListPage.tsx`/`MyPage.tsx`가 `useToggleApplication`을 연결. `AdminPromotionManagePage.tsx`에 "신청" 컬럼 추가 — `<details>`/`<summary>`(네이티브 HTML, 별도 모달 라이브러리 도입 안 함)로 펼치면 `useApplicants`(신규 훅)가 그 프로모션의 신청자 email/신청일시 목록을 지연 조회(펼치기 전에는 요청 안 함).
+- **완료 조건**
+  - [x] 프로모션 카드에 "신청하기"/"신청완료" 버튼이 `is_applied` 값에 따라 토글되어 표시된다 (`PromotionCard.test.tsx`)
+  - [x] 신청 버튼 클릭 시 `useToggleApplication`이 프로모션 id/현재 상태와 함께 호출되고, TOP3·프로모션 목록·마이페이지 북마크 목록 어디서든 동일하게 동작한다 (`PromotionListPage.test.tsx`)
+  - [x] 관리자 화면 프로모션 행에 신청 수가 표시되고, 클릭해 펼치면 신청자 email 목록이 지연 조회되어 표시된다(신청자 0명이면 안내 문구) (`AdminPromotionManagePage.test.tsx`)
+  - **테스트**: `applicationApi.test.ts`(신규), `PromotionCard.test.tsx`/`PromotionListPage.test.tsx`/`AdminPromotionManagePage.test.tsx`에 케이스 추가 — 전체 151 tests 통과, `applicationApi.ts`/`PromotionCard.tsx` 100%, `PromotionListPage.tsx` 91.66%, `AdminPromotionManagePage.tsx` 96.72% — 목표 90% 충족(`useApplications.ts`/`useAdminPromotions.ts`의 `useApplicants`는 기존 `useBookmarks.ts`와 동일하게 소비 페이지 테스트에서 모킹되어 실행되므로 커버리지 도구상 0%로 집계됨 — 기존 훅 계층과 동일한 패턴)
+
 ---
 
 ## 일정 배치 (1차 MVP: 3일 기준)
@@ -367,3 +388,4 @@ flowchart TB
 | v1.29 | 2026-08-20 | 사용자 요청 2건 반영: ①`PromotionCard.tsx`에 매핑된 MBTI 유형 뱃지 추가("신규" 뱃지와 동일한 위치), ②`.promotion-grid`(프로모션 목록)를 flex에서 CSS grid(`auto-fill`, minmax 260px)로 전환해 마지막 줄에 카드가 1개만 남아도 전체 폭으로 늘어나지 않고 다른 카드와 동일한 1칸만 차지하도록 수정. 대화 중 추가 요청으로 ③"인기 프로모션 TOP3"를 본인 MBTI 유형 기준으로 개인화(완료 결과 있으면 해당 유형 내에서만 집계, 목록 필터 버튼 변경과는 무관하게 유지)도 함께 반영. `docs/1-domain-definition.md`(v1.8), `3-PRD.md`(v1.7), `7-wireframe.md`(v1.5), `10-style.md`(v1.5) 갱신. 전체 130 tests 통과, `promotionBadges.ts` 100%·`PromotionCard.tsx` 100%·`PromotionListPage.tsx` 95%. Playwright로 실제 ESTJ 판정 계정에서 TOP3/목록 모두 ESTJ 뱃지 프로모션만 남는 것과 마지막 줄 단독 카드가 그리드 1칸(309px, 960px 3열 중 1칸)만 차지함을 확인, 테스트 계정 정리함 |
 | v1.30 | 2026-08-21 | 사용자 요청 반영: "프로모션 목록" 필터를 16개 MBTI 유형별(v1.7)에서 "전체/신규/마감임박/상시" 4개 상태 버튼으로 교체(TOP3가 이미 MBTI로 개인화되어 있어 목록 필터와 기능 중복 판단, `filterByStatus` 순수 함수 신규, 기존 `filterByMbtiType`은 TOP3 개인화 계산에 계속 사용). 뱃지 3종 추가: "마감"(만료, `isEnded`, 도메인 정의서에 이미 문서화됐던 미구현 규칙을 채움)·"상시"(마감일 없음, `isAlwaysOpen`)·"인기"(TOP3 포함 항목, 목록 필터와 무관하게 항상 본인 유형 기준의 TOP3 id로 계산). `docs/1-domain-definition.md`(v1.9), `3-PRD.md`(v1.8), `7-wireframe.md`(v1.6), `10-style.md`(v1.6) 갱신. 전체 146 tests 통과, `promotionBadges.ts` 100%·`PromotionCard.tsx` 100%·`PromotionListPage.tsx` 95.23%. Playwright로 실제 DB 프로모션 1건의 마감일을 임시로 과거로 변경해 "마감" 뱃지 렌더 확인 후 원복, 상태 필터 4개 버튼 동작과 TOP3 불변 확인 |
 | v1.31 | 2026-08-21 | 사용자 요청 반영(v1.30 일부 롤백): 인기 프로모션 TOP3 각 카드에 순위 뱃지("1위"/"2위"/"3위") 추가(`PromotionCard.tsx`에 `rank` prop, `PromotionListPage.tsx`가 `index+1` 전달). "마감"/"상시" 뱃지(`isEnded`/`isAlwaysOpen`)와 "상시" 상태 필터 버튼 제거 — 사장님이 직접 등록·관리하는 정보라 마감 여부를 별도 표시할 실익이 낮다는 판단(상태 필터는 "전체"/"신규"/"마감임박" 3개로 축소). `docs/1-domain-definition.md`(v1.10), `3-PRD.md`(v1.9), `7-wireframe.md`(v1.7), `10-style.md`(v1.7) 갱신. 전체 138 tests 통과, `promotionBadges.ts`/`PromotionCard.tsx` 100%·`PromotionListPage.tsx` 95.23%, `tsc -b`·`oxlint` 통과. Playwright로 실제 데이터에서 TOP3 순위 뱃지(1위/2위/3위) 및 목록의 마감임박/신규/인기 뱃지 정상 표시, 마감/상시 뱃지 미노출 확인 |
+| v1.32 | 2026-08-21 | 사용자 요청 반영(서비스 활용성 강화): BE-11(프로모션 신청 API)·FE-10(신청 UI) 신규 Task 추가·완료. DB-5(`005_add_promotion_applications.sql`, bookmarks와 동일 구조의 `promotion_applications` 테이블) 신설, `POST/DELETE /api/applications`(멱등 토글)·관리자 전용 `GET /api/promotion-offers/:id/applicants`(email+applied_at) 추가, `promotion_offers` 목록 응답에 `application_count`/`is_applied` 추가. 프론트 `PromotionCard`에 "신청하기"/"신청완료" 버튼, `AdminPromotionManagePage`에 신청 수+`<details>` 기반 신청자 목록(지연 조회) 추가. 별도 연락처 입력 폼 없이 계정 email을 재사용해 관리자가 직접 연락하는 흐름 — 북마크(관심 표시)만 있던 "표시 전용" 구조를 관리자가 실제로 연락해 진행할 수 있는 액션으로 보강. `docs/1-domain-definition.md`(v1.11), `3-PRD.md`(v1.10), `8-erd.md`(v1.2), `8-schema.sql`, `swagger.json` 갱신. 백엔드 전체 14 suites 86 tests 통과(신규 파일 100%·컨트롤러 90%), 프론트 전체 21 files 151 tests 통과(`applicationApi.ts`/`PromotionCard.tsx` 100%), `tsc -b`·`oxlint` 통과 |

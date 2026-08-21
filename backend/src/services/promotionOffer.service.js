@@ -1,6 +1,7 @@
 const { AppError } = require('../errors');
 const promotionOfferDb = require('../db/promotionOffer.db');
 const testSubmissionDb = require('../db/testSubmission.db');
+const promotionApplicationDb = require('../db/promotionApplication.db');
 
 function annotateAndSort(rawPromotions, latestTypeCode) {
   const annotated = rawPromotions.map((p) => ({
@@ -57,4 +58,20 @@ async function remove(id) {
   await promotionOfferDb.deleteById(id);
 }
 
-module.exports = { annotateAndSort, validateMbtiTypeCodes, listForUser, create, update, remove };
+async function listApplicants(id) {
+  const exists = await promotionOfferDb.existsById(id);
+  if (!exists) {
+    throw new AppError('존재하지 않는 프로모션입니다.', 404);
+  }
+  return promotionApplicationDb.listApplicants(id);
+}
+
+module.exports = {
+  annotateAndSort,
+  validateMbtiTypeCodes,
+  listForUser,
+  create,
+  update,
+  remove,
+  listApplicants,
+};

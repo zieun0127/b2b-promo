@@ -26,6 +26,8 @@ const promotion: PromotionOfferListItem = {
   recommended: false,
   bookmark_count: 1,
   is_bookmarked: true,
+  application_count: 0,
+  is_applied: false,
 };
 
 beforeEach(() => {

@@ -4,6 +4,7 @@ import PromotionCard from '../components/PromotionCard';
 import { useMyLatestResult } from '../hooks/useMyLatestResult';
 import { useMyHistory } from '../hooks/useMyHistory';
 import { useBookmarks, useToggleBookmark } from '../hooks/useBookmarks';
+import { useToggleApplication } from '../hooks/useApplications';
 
 export default function MyPage() {
   const navigate = useNavigate();
@@ -11,6 +12,7 @@ export default function MyPage() {
   const { data: history, isLoading: isHistoryLoading, isError: isHistoryError } = useMyHistory();
   const { data: bookmarks, isLoading: isBookmarksLoading, isError: isBookmarksError } = useBookmarks();
   const { toggle } = useToggleBookmark();
+  const { toggle: toggleApplication } = useToggleApplication();
 
   return (
     <div className="mypage">
@@ -61,6 +63,7 @@ export default function MyPage() {
               key={promotion.id}
               promotion={promotion}
               onToggleBookmark={(p) => toggle(p.id, p.is_bookmarked)}
+              onToggleApplication={(p) => toggleApplication(p.id, p.is_applied)}
             />
           ))}
         </div>

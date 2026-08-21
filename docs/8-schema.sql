@@ -76,3 +76,14 @@ CREATE TABLE bookmarks (
 
 -- 프로모션별 북마크 수 집계(인기 TOP3, 관리자 통계)가 자주 조회되므로 인덱스 추가
 CREATE INDEX idx_bookmarks_promotion_offer_id ON bookmarks(promotion_offer_id);
+
+-- 프로모션 신청(실제 진행 요청). 북마크(관심 표시)와 별개 액션이며, 별도 연락처 입력 없이
+-- 신청자 계정의 email을 그대로 연락처로 사용한다(관리자가 이 email로 직접 연락).
+CREATE TABLE promotion_applications (
+    user_id             UUID NOT NULL REFERENCES users(id),
+    promotion_offer_id  UUID NOT NULL REFERENCES promotion_offers(id),
+    applied_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
+    PRIMARY KEY (user_id, promotion_offer_id)
+);
+
+CREATE INDEX idx_promotion_applications_promotion_offer_id ON promotion_applications(promotion_offer_id);

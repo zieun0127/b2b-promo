@@ -4,15 +4,18 @@ import userEvent from '@testing-library/user-event';
 import PromotionListPage from './PromotionListPage';
 import { usePromotions } from '../hooks/usePromotions';
 import { useToggleBookmark } from '../hooks/useBookmarks';
+import { useToggleApplication } from '../hooks/useApplications';
 import { useMyLatestResult } from '../hooks/useMyLatestResult';
 import type { PromotionOfferListItem, TestSubmissionResult } from '../types/domain';
 
 vi.mock('../hooks/usePromotions');
 vi.mock('../hooks/useBookmarks');
+vi.mock('../hooks/useApplications');
 vi.mock('../hooks/useMyLatestResult');
 
 const usePromotionsMock = vi.mocked(usePromotions);
 const useToggleBookmarkMock = vi.mocked(useToggleBookmark);
+const useToggleApplicationMock = vi.mocked(useToggleApplication);
 const useMyLatestResultMock = vi.mocked(useMyLatestResult);
 
 function makePromotion(overrides: Partial<PromotionOfferListItem>): PromotionOfferListItem {
@@ -26,6 +29,8 @@ function makePromotion(overrides: Partial<PromotionOfferListItem>): PromotionOff
     recommended: false,
     bookmark_count: 0,
     is_bookmarked: false,
+    application_count: 0,
+    is_applied: false,
     ...overrides,
   };
 }
@@ -64,6 +69,9 @@ function mockLatestResult(data: TestSubmissionResult | null) {
 
 const toggle = vi.fn();
 useToggleBookmarkMock.mockReturnValue({ toggle, isLoading: false });
+
+const toggleApplication = vi.fn();
+useToggleApplicationMock.mockReturnValue({ toggle: toggleApplication, isLoading: false });
 
 function getListGrid(): HTMLElement {
   return document.querySelector('.promotion-grid') as HTMLElement;
@@ -308,9 +316,22 @@ describe('PromotionListPage', () => {
 
     render(<PromotionListPage />);
 
-    const buttons = screen.getAllByRole('button', { name: '북마크 등록' });
-    await user.click(buttons[0]);
+    const button = within(getListGrid()).getByRole('button', { name: '북마크 등록' });
+    await user.click(button);
 
     expect(toggle).toHaveBeenCalledWith('promo-9', false);
+  });
+
+  it('신청 버튼 클릭 시 toggleApplication이 프로모션 id/상태와 함께 호출된다', async () => {
+    mockLatestResult(null);
+    mockPromotions({ data: [makePromotion({ id: 'promo-9', is_applied: false })] });
+    const user = userEvent.setup();
+
+    render(<PromotionListPage />);
+
+    const button = within(getListGrid()).getByRole('button', { name: '신청하기' });
+    await user.click(button);
+
+    expect(toggleApplication).toHaveBeenCalledWith('promo-9', false);
   });
 });

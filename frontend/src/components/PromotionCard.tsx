@@ -4,6 +4,7 @@ import { daysUntil, isEndingSoon, isNew } from '../utils/promotionBadges';
 export interface PromotionCardProps {
   promotion: PromotionOfferListItem;
   onToggleBookmark?: (promotion: PromotionOfferListItem) => void;
+  onToggleApplication?: (promotion: PromotionOfferListItem) => void;
   isPopular?: boolean;
   rank?: number;
 }
@@ -11,6 +12,7 @@ export interface PromotionCardProps {
 export default function PromotionCard({
   promotion,
   onToggleBookmark,
+  onToggleApplication,
   isPopular,
   rank,
 }: PromotionCardProps) {
@@ -37,16 +39,27 @@ export default function PromotionCard({
       <p className="promotion-description">{promotion.description}</p>
       <div className="promotion-card__footer">
         <span className="promotion-card__bookmark-count">♥ {promotion.bookmark_count}</span>
-        {onToggleBookmark && (
-          <button
-            type="button"
-            className="bookmark-button"
-            aria-label={promotion.is_bookmarked ? '북마크 해제' : '북마크 등록'}
-            onClick={() => onToggleBookmark(promotion)}
-          >
-            {promotion.is_bookmarked ? '♥' : '♡'}
-          </button>
-        )}
+        <div className="promotion-card__actions">
+          {onToggleBookmark && (
+            <button
+              type="button"
+              className="bookmark-button"
+              aria-label={promotion.is_bookmarked ? '북마크 해제' : '북마크 등록'}
+              onClick={() => onToggleBookmark(promotion)}
+            >
+              {promotion.is_bookmarked ? '♥' : '♡'}
+            </button>
+          )}
+          {onToggleApplication && (
+            <button
+              type="button"
+              className={`apply-button${promotion.is_applied ? ' apply-button--applied' : ''}`}
+              onClick={() => onToggleApplication(promotion)}
+            >
+              {promotion.is_applied ? '신청완료' : '신청하기'}
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );

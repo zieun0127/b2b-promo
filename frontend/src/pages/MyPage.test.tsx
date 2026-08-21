@@ -6,17 +6,21 @@ import MyPage from './MyPage';
 import { useMyLatestResult } from '../hooks/useMyLatestResult';
 import { useMyHistory } from '../hooks/useMyHistory';
 import { useBookmarks, useToggleBookmark } from '../hooks/useBookmarks';
+import { useToggleApplication } from '../hooks/useApplications';
 import type { PromotionOfferListItem, TestSubmissionResult } from '../types/domain';
 
 vi.mock('../hooks/useMyLatestResult');
 vi.mock('../hooks/useMyHistory');
 vi.mock('../hooks/useBookmarks');
+vi.mock('../hooks/useApplications');
 
 const useMyLatestResultMock = vi.mocked(useMyLatestResult);
 const useMyHistoryMock = vi.mocked(useMyHistory);
 const useBookmarksMock = vi.mocked(useBookmarks);
 const toggle = vi.fn();
 vi.mocked(useToggleBookmark).mockReturnValue({ toggle, isLoading: false });
+const toggleApplication = vi.fn();
+vi.mocked(useToggleApplication).mockReturnValue({ toggle: toggleApplication, isLoading: false });
 
 const result: TestSubmissionResult = {
   id: 'sub-1',
@@ -177,6 +181,8 @@ describe('MyPage', () => {
       recommended: false,
       bookmark_count: 3,
       is_bookmarked: true,
+      application_count: 0,
+      is_applied: false,
     };
     mockQuery({ data: null });
     mockBookmarks({ data: [bookmarked] });

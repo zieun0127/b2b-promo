@@ -1,6 +1,6 @@
 import { apiFetch } from './client';
 import { parseErrorAndThrow } from './authApi';
-import type { PromotionOfferInput, PromotionOfferListItem } from '../types/domain';
+import type { Applicant, PromotionOfferInput, PromotionOfferListItem } from '../types/domain';
 
 export async function getPromotions(): Promise<PromotionOfferListItem[]> {
   const res = await apiFetch('/promotion-offers');
@@ -32,4 +32,10 @@ export async function updatePromotion(
 export async function deletePromotion(id: string): Promise<void> {
   const res = await apiFetch(`/promotion-offers/${id}`, { method: 'DELETE' });
   if (!res.ok) return parseErrorAndThrow(res);
+}
+
+export async function getApplicants(id: string): Promise<Applicant[]> {
+  const res = await apiFetch(`/promotion-offers/${id}/applicants`);
+  if (!res.ok) return parseErrorAndThrow(res);
+  return res.json();
 }

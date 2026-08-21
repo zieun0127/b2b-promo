@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { usePromotions } from '../hooks/usePromotions';
 import { useToggleBookmark } from '../hooks/useBookmarks';
+import { useToggleApplication } from '../hooks/useApplications';
 import { useMyLatestResult } from '../hooks/useMyLatestResult';
 import PromotionCard from '../components/PromotionCard';
 import {
@@ -22,6 +23,7 @@ export default function PromotionListPage() {
   const { data, isLoading, isError } = usePromotions();
   const { data: latestResult } = useMyLatestResult();
   const { toggle } = useToggleBookmark();
+  const { toggle: toggleApplication } = useToggleApplication();
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('ALL');
 
   if (isLoading) return <div className="promotion-list-page">불러오는 중...</div>;
@@ -46,6 +48,7 @@ export default function PromotionListPage() {
             promotion={promotion}
             rank={index + 1}
             onToggleBookmark={(p) => toggle(p.id, p.is_bookmarked)}
+            onToggleApplication={(p) => toggleApplication(p.id, p.is_applied)}
           />
         ))}
       </div>
@@ -72,6 +75,7 @@ export default function PromotionListPage() {
             promotion={promotion}
             isPopular={popularIds.has(promotion.id)}
             onToggleBookmark={(p) => toggle(p.id, p.is_bookmarked)}
+            onToggleApplication={(p) => toggleApplication(p.id, p.is_applied)}
           />
         ))}
       </div>

@@ -399,12 +399,33 @@ body {
   justify-content: space-between;
 }
 
+.promotion-card__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .bookmark-button {
   background: none;
   border: none;
   font-size: 20px;
   cursor: pointer;
   color: var(--color-accent);
+}
+
+.apply-button {
+  background-color: #ffffff;
+  color: var(--color-primary);
+  border: 1px solid var(--color-primary);
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.apply-button--applied {
+  background-color: var(--color-primary);
+  color: #ffffff;
 }
 
 .history-list {
@@ -438,6 +459,13 @@ body {
   border-bottom: 1px solid var(--color-border);
   padding: 8px;
   text-align: left;
+}
+
+.applicant-list {
+  margin: 4px 0 0;
+  padding-left: 16px;
+  font-size: 12px;
+  color: var(--color-text-muted);
 }
 
 .admin-promotion-form {

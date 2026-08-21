@@ -12,6 +12,8 @@ erDiagram
     promotion_offers ||--o{ mbti_result_type_promotion_offers : "1:N"
     users ||--o{ bookmarks : "1:N 북마크"
     promotion_offers ||--o{ bookmarks : "1:N 북마크됨"
+    users ||--o{ promotion_applications : "1:N 신청"
+    promotion_offers ||--o{ promotion_applications : "1:N 신청됨"
 
     users {
         uuid id PK
@@ -64,6 +66,12 @@ erDiagram
         uuid promotion_offer_id FK
         timestamp created_at
     }
+
+    promotion_applications {
+        uuid user_id FK
+        uuid promotion_offer_id FK
+        timestamp applied_at
+    }
 ```
 
 ## 테이블 설명
@@ -75,6 +83,7 @@ erDiagram
 - **mbti_result_type_promotion_offers**: `mbti_result_types` N:N `promotion_offers` 관계를 표현하기 위한 조인 테이블. 도메인 정의서 5절에 N:N 관계로만 명시되어 있고 관계형 DB(PostgreSQL)에서는 조인 테이블 없이 N:N을 표현할 수 없으므로 추가함(PK는 두 FK 컬럼의 복합키).
 - **test_submissions**: 테스트 참여 이력. 도메인 정의서 5절에 따라 문항별 답변 로그는 저장하지 않고 4개 지표 최종값(`ei_value`, `sn_value`, `tf_value`, `jp_value`)과 `mbti_result_type_code`, `status`(COMPLETED/IN_PROGRESS)만 저장. 도메인 정의서 4절 그대로.
 - **bookmarks**: `users` N:N `promotion_offers` 관계를 표현하는 조인 테이블 겸 Bookmark 엔티티(도메인 정의서 4절 v1.6 신규). PK는 `(user_id, promotion_offer_id)` 복합키 — 이력이 아닌 현재 상태만 의미가 있으므로 동일 조합은 유일해야 함(북마크 해제 시 행 자체를 삭제, 별도 상태 컬럼 없음).
+- **promotion_applications**: `users` N:N `promotion_offers` 관계를 표현하는 조인 테이블 겸 Application 엔티티(도메인 정의서 4절 v1.11 신규). 북마크(관심 표시)와 별개로 "실제 진행을 원한다"는 의사를 남기는 액션. 별도 연락처 컬럼 없이 `users.email`을 그대로 연락처로 재사용한다(관리자가 이 email로 직접 연락). PK는 `(user_id, promotion_offer_id)` 복합키로 bookmarks와 동일한 멱등 구조.
 
 ## 변경 이력
 
@@ -82,3 +91,4 @@ erDiagram
 |---|---|---|
 | v1.0 | 2026-08-13 | 초안 작성 |
 | v1.1 | 2026-08-20 | 지속 재방문 강화 기획(v1.6 도메인 정의서) 반영: `promotion_offers`에 `created_at`/`ends_at` 추가, `bookmarks` 테이블 신설(users N:N promotion_offers) |
+| v1.2 | 2026-08-21 | 사용자 요청 반영: 프로모션 신청 기능 추가를 위해 `promotion_applications` 테이블 신설(users N:N promotion_offers, bookmarks와 동일 구조) |

@@ -10,6 +10,7 @@ const testSubmissionRoutes = require('./routes/testSubmission.routes');
 const adminRoutes = require('./routes/admin.routes');
 const promotionOfferRoutes = require('./routes/promotionOffer.routes');
 const bookmarkRoutes = require('./routes/bookmark.routes');
+const promotionApplicationRoutes = require('./routes/promotionApplication.routes');
 
 const app = express();
 
@@ -33,6 +34,7 @@ app.use('/api/test-submissions', testSubmissionRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/promotion-offers', promotionOfferRoutes);
 app.use('/api/bookmarks', bookmarkRoutes);
+app.use('/api/applications', promotionApplicationRoutes);
 
 app.use((req, res, next) => next(new AppError('Not Found', 404)));
 

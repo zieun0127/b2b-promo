@@ -5,8 +5,8 @@ import AdminPromotionManagePage from './AdminPromotionManagePage';
 import { ApiError } from '../api/authApi';
 import { usePromotions } from '../hooks/usePromotions';
 import { useAdminStats } from '../hooks/useAdminStats';
-import { useAdminPromotions } from '../hooks/useAdminPromotions';
-import type { AdminStats, PromotionOfferListItem } from '../types/domain';
+import { useAdminPromotions, useApplicants } from '../hooks/useAdminPromotions';
+import type { AdminStats, Applicant, PromotionOfferListItem } from '../types/domain';
 
 vi.mock('../hooks/usePromotions');
 vi.mock('../hooks/useAdminStats');
@@ -15,6 +15,15 @@ vi.mock('../hooks/useAdminPromotions');
 const usePromotionsMock = vi.mocked(usePromotions);
 const useAdminStatsMock = vi.mocked(useAdminStats);
 const useAdminPromotionsMock = vi.mocked(useAdminPromotions);
+const useApplicantsMock = vi.mocked(useApplicants);
+
+function mockApplicants(data: Applicant[] | undefined, isLoading = false) {
+  useApplicantsMock.mockReturnValue({
+    data,
+    isLoading,
+    isError: false,
+  } as unknown as ReturnType<typeof useApplicants>);
+}
 
 const promotion: PromotionOfferListItem = {
   id: 'promo-1',
@@ -26,6 +35,8 @@ const promotion: PromotionOfferListItem = {
   recommended: false,
   bookmark_count: 12,
   is_bookmarked: false,
+  application_count: 2,
+  is_applied: false,
 };
 
 function mockPromotions(overrides: Partial<ReturnType<typeof usePromotions>>) {
@@ -66,6 +77,7 @@ beforeEach(() => {
   });
   mockPromotions({});
   mockStats();
+  mockApplicants(undefined);
   vi.spyOn(window, 'confirm').mockReturnValue(true);
 });
 
@@ -92,6 +104,37 @@ describe('AdminPromotionManagePage', () => {
     const row = screen.getByText('평일 오후 타임세일').closest('tr') as HTMLElement;
     expect(within(row).getByText('7')).toBeInTheDocument();
     expect(within(row).getByText('12')).toBeInTheDocument();
+  });
+
+  it('행에 신청 수가 표시된다', () => {
+    render(<AdminPromotionManagePage />);
+
+    const row = screen.getByText('평일 오후 타임세일').closest('tr') as HTMLElement;
+    expect(within(row).getByText('2명')).toBeInTheDocument();
+  });
+
+  it('신청 수를 펼치면 신청자 목록이 표시된다', async () => {
+    mockApplicants([
+      { email: 'owner-a@example.com', applied_at: '2026-08-21T00:00:00.000Z' },
+      { email: 'owner-b@example.com', applied_at: '2026-08-20T00:00:00.000Z' },
+    ]);
+    const user = userEvent.setup();
+    render(<AdminPromotionManagePage />);
+
+    await user.click(screen.getByText('2명'));
+
+    expect(await screen.findByText(/owner-a@example.com/)).toBeInTheDocument();
+    expect(screen.getByText(/owner-b@example.com/)).toBeInTheDocument();
+  });
+
+  it('신청자가 없으면 안내 문구를 표시한다', async () => {
+    mockApplicants([]);
+    const user = userEvent.setup();
+    render(<AdminPromotionManagePage />);
+
+    await user.click(screen.getByText('2명'));
+
+    expect(await screen.findByText('신청자가 없습니다.')).toBeInTheDocument();
   });
 
   it('대상 MBTI 유형을 선택하지 않고 저장하면 오류를 표시하고 저장 요청을 보내지 않는다', async () => {

@@ -7,7 +7,9 @@ const LIST_COLUMNS = `
     '{}'
   ) AS mbti_type_codes,
   (SELECT COUNT(*)::int FROM bookmarks bk WHERE bk.promotion_offer_id = po.id) AS bookmark_count,
-  EXISTS(SELECT 1 FROM bookmarks bk2 WHERE bk2.promotion_offer_id = po.id AND bk2.user_id = $1) AS is_bookmarked
+  EXISTS(SELECT 1 FROM bookmarks bk2 WHERE bk2.promotion_offer_id = po.id AND bk2.user_id = $1) AS is_bookmarked,
+  (SELECT COUNT(*)::int FROM promotion_applications pa WHERE pa.promotion_offer_id = po.id) AS application_count,
+  EXISTS(SELECT 1 FROM promotion_applications pa2 WHERE pa2.promotion_offer_id = po.id AND pa2.user_id = $1) AS is_applied
 `;
 
 async function findByResultTypeCode(typeCode) {
@@ -87,6 +89,7 @@ async function deleteById(id) {
   try {
     await client.query('BEGIN');
     await client.query('DELETE FROM bookmarks WHERE promotion_offer_id = $1', [id]);
+    await client.query('DELETE FROM promotion_applications WHERE promotion_offer_id = $1', [id]);
     await client.query('DELETE FROM mbti_result_type_promotion_offers WHERE promotion_offer_id = $1', [id]);
     await client.query('DELETE FROM promotion_offers WHERE id = $1', [id]);
     await client.query('COMMIT');

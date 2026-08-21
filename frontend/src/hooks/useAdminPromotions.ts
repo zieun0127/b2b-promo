@@ -1,6 +1,14 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { createPromotion, deletePromotion, updatePromotion } from '../api/promotionApi';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { createPromotion, deletePromotion, getApplicants, updatePromotion } from '../api/promotionApi';
 import type { PromotionOfferInput } from '../types/domain';
+
+export function useApplicants(promotionOfferId: string, enabled: boolean) {
+  return useQuery({
+    queryKey: ['applicants', promotionOfferId],
+    queryFn: () => getApplicants(promotionOfferId),
+    enabled,
+  });
+}
 
 export function useAdminPromotions() {
   const queryClient = useQueryClient();

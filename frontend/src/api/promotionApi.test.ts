@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { createPromotion, deletePromotion, getPromotions, updatePromotion } from './promotionApi';
+import { createPromotion, deletePromotion, getApplicants, getPromotions, updatePromotion } from './promotionApi';
 import { ApiError } from './authApi';
 import { apiFetch } from './client';
 import type { PromotionOfferInput, PromotionOfferListItem } from '../types/domain';
@@ -26,6 +26,8 @@ const promotion: PromotionOfferListItem = {
   recommended: false,
   bookmark_count: 3,
   is_bookmarked: false,
+  application_count: 0,
+  is_applied: false,
 };
 
 const input: PromotionOfferInput = {
@@ -108,5 +110,23 @@ describe('deletePromotion', () => {
     apiFetchMock.mockResolvedValue(jsonResponse({ message: '존재하지 않는 프로모션입니다.' }, 404, false));
 
     await expect(deletePromotion('missing')).rejects.toBeInstanceOf(ApiError);
+  });
+});
+
+describe('getApplicants', () => {
+  it('GET /promotion-offers/:id/applicants를 호출하고 신청자 목록을 반환한다', async () => {
+    const applicants = [{ email: 'owner@example.com', applied_at: '2026-08-21T00:00:00.000Z' }];
+    apiFetchMock.mockResolvedValue(jsonResponse(applicants, 200, true));
+
+    const result = await getApplicants('promo-1');
+
+    expect(apiFetchMock).toHaveBeenCalledWith('/promotion-offers/promo-1/applicants');
+    expect(result).toEqual(applicants);
+  });
+
+  it('관리자가 아니면(403) ApiError를 throw한다', async () => {
+    apiFetchMock.mockResolvedValue(jsonResponse({ message: '관리자만 접근할 수 있습니다.' }, 403, false));
+
+    await expect(getApplicants('promo-1')).rejects.toBeInstanceOf(ApiError);
   });
 });

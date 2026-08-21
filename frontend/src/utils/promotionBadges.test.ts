@@ -24,6 +24,8 @@ function makePromotion(overrides: Partial<PromotionOfferListItem>): PromotionOff
     recommended: false,
     bookmark_count: 0,
     is_bookmarked: false,
+    application_count: 0,
+    is_applied: false,
     ...overrides,
   };
 }

@@ -45,4 +45,13 @@ async function remove(req, res, next) {
   }
 }
 
-module.exports = { list, create, update, remove };
+async function listApplicants(req, res, next) {
+  try {
+    const result = await promotionOfferService.listApplicants(req.params.id);
+    res.status(200).json(result);
+  } catch (err) {
+    next(err);
+  }
+}
+
+module.exports = { list, create, update, remove, listApplicants };

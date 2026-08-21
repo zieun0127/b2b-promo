@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { usePromotions } from '../hooks/usePromotions';
 import { useAdminStats } from '../hooks/useAdminStats';
-import { useAdminPromotions } from '../hooks/useAdminPromotions';
+import { useAdminPromotions, useApplicants } from '../hooks/useAdminPromotions';
 import { MBTI_TYPE_CODES } from '../constants/mbtiTypes';
 import { ApiError } from '../api/authApi';
 import type { PromotionOfferListItem } from '../types/domain';
@@ -14,6 +14,28 @@ interface FormState {
 }
 
 const EMPTY_FORM: FormState = { name: '', description: '', ends_at: '', mbti_type_codes: [] };
+
+function ApplicantsCell({ promotionOfferId, count }: { promotionOfferId: string; count: number }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const { data: applicants, isLoading } = useApplicants(promotionOfferId, isOpen);
+
+  return (
+    <details onToggle={(e) => setIsOpen((e.target as HTMLDetailsElement).open)}>
+      <summary>{count}명</summary>
+      {isOpen && isLoading && <p>불러오는 중...</p>}
+      {isOpen && applicants && applicants.length === 0 && <p>신청자가 없습니다.</p>}
+      {isOpen && applicants && applicants.length > 0 && (
+        <ul className="applicant-list">
+          {applicants.map((a) => (
+            <li key={a.email}>
+              {a.email} ({new Date(a.applied_at).toLocaleDateString()})
+            </li>
+          ))}
+        </ul>
+      )}
+    </details>
+  );
+}
 
 export default function AdminPromotionManagePage() {
   const { data: promotions, isLoading, isError } = usePromotions();
@@ -111,6 +133,7 @@ export default function AdminPromotionManagePage() {
             <th>대상 유형</th>
             <th>매칭수</th>
             <th>북마크</th>
+            <th>신청</th>
             <th>관리</th>
           </tr>
         </thead>
@@ -124,6 +147,9 @@ export default function AdminPromotionManagePage() {
                 <td>{promotion.mbti_type_codes.join(', ')}</td>
                 <td>{stat?.recommended_match_count ?? 0}</td>
                 <td>{stat?.bookmark_count ?? promotion.bookmark_count}</td>
+                <td>
+                  <ApplicantsCell promotionOfferId={promotion.id} count={promotion.application_count} />
+                </td>
                 <td>
                   <button type="button" onClick={() => openEdit(promotion)}>
                     수정

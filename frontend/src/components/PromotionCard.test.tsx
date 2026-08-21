@@ -15,6 +15,8 @@ function makePromotion(overrides: Partial<PromotionOfferListItem>): PromotionOff
     recommended: false,
     bookmark_count: 12,
     is_bookmarked: false,
+    application_count: 0,
+    is_applied: false,
     ...overrides,
   };
 }
@@ -124,5 +126,34 @@ describe('PromotionCard', () => {
     render(<PromotionCard promotion={makePromotion({})} />);
 
     expect(screen.queryByText('인기')).not.toBeInTheDocument();
+  });
+
+  it('is_applied가 true이면 "신청완료", false면 "신청하기" 버튼을 표시한다', () => {
+    const { rerender } = render(
+      <PromotionCard promotion={makePromotion({ is_applied: true })} onToggleApplication={vi.fn()} />
+    );
+    expect(screen.getByRole('button', { name: '신청완료' })).toBeInTheDocument();
+
+    rerender(
+      <PromotionCard promotion={makePromotion({ is_applied: false })} onToggleApplication={vi.fn()} />
+    );
+    expect(screen.getByRole('button', { name: '신청하기' })).toBeInTheDocument();
+  });
+
+  it('신청 버튼 클릭 시 onToggleApplication이 해당 프로모션과 함께 호출된다', async () => {
+    const onToggleApplication = vi.fn();
+    const promotion = makePromotion({ id: 'promo-9' });
+    const user = userEvent.setup();
+    render(<PromotionCard promotion={promotion} onToggleApplication={onToggleApplication} />);
+
+    await user.click(screen.getByRole('button', { name: '신청하기' }));
+
+    expect(onToggleApplication).toHaveBeenCalledWith(promotion);
+  });
+
+  it('onToggleApplication이 없으면 신청 버튼을 렌더링하지 않는다', () => {
+    render(<PromotionCard promotion={makePromotion({})} />);
+
+    expect(screen.queryByRole('button', { name: /신청/ })).not.toBeInTheDocument();
   });
 });
