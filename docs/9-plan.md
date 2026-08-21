@@ -344,6 +344,15 @@ flowchart TB
   - [x] 관리자 화면 프로모션 행에 신청 수가 표시되고, 클릭해 펼치면 신청자 email 목록이 지연 조회되어 표시된다(신청자 0명이면 안내 문구) (`AdminPromotionManagePage.test.tsx`)
   - **테스트**: `applicationApi.test.ts`(신규), `PromotionCard.test.tsx`/`PromotionListPage.test.tsx`/`AdminPromotionManagePage.test.tsx`에 케이스 추가 — 전체 151 tests 통과, `applicationApi.ts`/`PromotionCard.tsx` 100%, `PromotionListPage.tsx` 91.66%, `AdminPromotionManagePage.tsx` 96.72% — 목표 90% 충족(`useApplications.ts`/`useAdminPromotions.ts`의 `useApplicants`는 기존 `useBookmarks.ts`와 동일하게 소비 페이지 테스트에서 모킹되어 실행되므로 커버리지 도구상 0%로 집계됨 — 기존 훅 계층과 동일한 패턴)
 
+### FE-11. 마이페이지 추천/신청 프로모션 강화 (v1.36 신규)
+- **선행 Task**: FE-8, FE-10
+- **작업**: `MyPage`에 "추천 프로모션" 섹션(`usePromotions`의 `recommended` 필터, `PromotionCard` 재사용으로 북마크·신청 토글 가능) 및 "신청한 프로모션" 섹션(같은 데이터의 `is_applied` 필터) 추가. `ResultSummary`에 `hidePromotions`/`onRetakeTest` prop 추가해 `MyPage`에서는 표시 전용 프로모션 목록을 숨기고 재응시 버튼을 유형 뱃지 옆으로 옮김(`ResultPage`는 기존과 동일하게 표시 전용 유지).
+- **완료 조건**
+  - [x] 마이페이지 "추천 프로모션" 카드에서 북마크·신청 토글이 동작한다(`PromotionCard` 재사용, 별도 컴포넌트 신설 없음) (`MyPage.test.tsx`: 추천 카드의 "신청하기" 클릭 시 `useToggleApplication`이 호출됨을 확인)
+  - [x] "신청한 프로모션" 섹션이 신청 상태(`is_applied`)를 반영해 표시되고, 0건이면 빈 상태 안내를 보여준다 (`MyPage.test.tsx`)
+  - [x] "MBTI 테스트 다시 하기" 버튼이 유형 뱃지 옆에 배치된다(`ResultSummary` 헤더 영역) (`ResultSummary.test.tsx`: `onRetakeTest` prop 클릭 시 호출 확인)
+  - **테스트**: `MyPage.test.tsx`/`ResultSummary.test.tsx`에 케이스 추가 — 전체 160 tests 통과, `tsc -b`·`oxlint` 통과. Playwright로 실제 계정(ESTJ) 로그인 후 추천 프로모션 신청→"신청한 프로모션" 섹션에 즉시 반영됨을 확인, 테스트 계정 정리함
+
 ---
 
 ## 일정 배치 (1차 MVP: 3일 기준)
@@ -412,3 +421,4 @@ flowchart TB
 | v1.33 | 2026-08-21 | 운영 배포 백엔드(`https://mbti-127-be.vercel.app`) 대상 API 레벨 E2E 테스트 수행(`docs/4-user-scenario.md` 시나리오 1~9 + 엣지 케이스 + 신청 기능, 33건 전부 PASS, `e2e/report-prod-api.md`). 테스트 중 프론트엔드가 아직 Vercel에 배포되지 않았고 `frontend/.env.production`의 `VITE_API_BASE_URL`에 오타(`mbit`→`mbti`)가 있었음을 발견해 로컬 파일 수정(Vercel 환경변수 반영은 사용자 몫). DB-6(`006_seed_more_promotions.sql`) 신규 Task 추가·완료: 사용자 요청으로 유형당 프로모션을 1개→2개로 늘려 로컬/운영 DB 모두 32건으로 확장(뱃지 날짜 분포는 DB-4와 동일 패턴 재사용) |
 | v1.34 | 2026-08-21 | 사용자 요청 반영: 프로모션 목록 상태 필터에 "내 MBTI" 버튼 추가(FE-7) — 완료된 결과가 있으면 본인 유형에 매핑된 프로모션만 목록에서 걸러보고, 없으면 "전체"와 동일하게 폴백한다. `filterByStatus`(`promotionBadges.ts`)에 `ownTypeCode` 파라미터를 추가해 기존 `filterByMbtiType`(TOP3 개인화용)을 재사용, 새 함수 신설 없음. `docs/1-domain-definition.md`(v1.12), `3-PRD.md`(v1.11), `7-wireframe.md`(v1.9), `10-style.md`(v1.9) 갱신. 전체 154 tests 통과, `tsc -b`·`oxlint` 통과 |
 | v1.35 | 2026-08-21 | 사용자 요청 반영(v1.8/v1.9 인기 프로모션 개인화 롤백): "인기 프로모션 TOP3"를 본인 MBTI 유형에 한정하지 않고 전체 프로모션 대상 신청 수(`application_count`) 기준으로 변경 — `pickTopByBookmarks`를 `pickTopByApplications`로 교체, `PromotionListPage.tsx`에서 TOP3의 `filterByMbtiType` 스코핑 제거. "인기"/"신규" 뱃지가 동일한 그린이라 구분이 안 되던 문제를 해결하기 위해 "인기" 뱃지 색상을 퍼플(`--color-popular: #7C4DBF`, `.badge--popular`)로 분리. DB-7(`007_seed_more_promotions_2.sql`) 신규 Task 추가·완료: 유형당 프로모션을 2개→4개로 늘려 로컬/운영 DB 모두 64건으로 확장. `docs/1-domain-definition.md`(v1.13), `3-PRD.md`(v1.12), `7-wireframe.md`(v1.10), `10-style.md`(v1.10) 갱신. 전체 154 tests 통과, `tsc -b`·`oxlint` 통과 |
+| v1.36 | 2026-08-21 | 사용자 요청 반영: FE-11(마이페이지 추천/신청 프로모션 강화) 신규 Task 추가·완료. `MyPage`에 "추천 프로모션"(북마크·신청 토글 가능한 `PromotionCard`로 표시, 기존 표시 전용 카드 대체) 및 "신청한 프로모션" 섹션 신규 추가(둘 다 이미 로드된 `usePromotions` 데이터를 `recommended`/`is_applied`로 필터링해 재사용, 별도 API 신설 없음). `ResultSummary`에 `hidePromotions`(MyPage에서 중복 표시 방지)/`onRetakeTest`(재응시 버튼을 유형 뱃지 옆으로 이동, 기존 하단 배치 롤백) prop 추가 — `ResultPage`는 두 prop 모두 미전달로 기존 동작 그대로 유지. `docs/7-wireframe.md`(v1.11) 갱신. 전체 160 tests 통과, `tsc -b`·`oxlint` 통과. Playwright로 실제 ESTJ 계정에서 추천 프로모션 신청 클릭 시 "신청한 프로모션" 섹션에 즉시 반영됨을 확인, 테스트 계정/데이터 정리함 |

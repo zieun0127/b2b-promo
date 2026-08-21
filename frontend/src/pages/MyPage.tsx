@@ -5,14 +5,18 @@ import { useMyLatestResult } from '../hooks/useMyLatestResult';
 import { useMyHistory } from '../hooks/useMyHistory';
 import { useBookmarks, useToggleBookmark } from '../hooks/useBookmarks';
 import { useToggleApplication } from '../hooks/useApplications';
+import { usePromotions } from '../hooks/usePromotions';
 
 export default function MyPage() {
   const navigate = useNavigate();
   const { data, isLoading, isError } = useMyLatestResult();
   const { data: history, isLoading: isHistoryLoading, isError: isHistoryError } = useMyHistory();
   const { data: bookmarks, isLoading: isBookmarksLoading, isError: isBookmarksError } = useBookmarks();
+  const { data: promotions } = usePromotions();
   const { toggle } = useToggleBookmark();
   const { toggle: toggleApplication } = useToggleApplication();
+  const recommendedPromotions = promotions?.filter((p) => p.recommended) ?? [];
+  const appliedPromotions = promotions?.filter((p) => p.is_applied) ?? [];
 
   return (
     <div className="mypage">
@@ -27,11 +31,23 @@ export default function MyPage() {
       {!isLoading && !isError && data && (
         <>
           <p className="submitted-at">최근 참여일시: {new Date(data.submitted_at).toLocaleString()}</p>
-          <ResultSummary result={data} />
-          <button type="button" onClick={() => navigate('/')}>
-            MBTI 테스트 다시 하기
-          </button>
+          <ResultSummary result={data} hidePromotions onRetakeTest={() => navigate('/')} />
         </>
+      )}
+
+      <div className="section-header">추천 프로모션</div>
+      {recommendedPromotions.length === 0 && <p>추천 프로모션이 없습니다.</p>}
+      {recommendedPromotions.length > 0 && (
+        <div className="promotion-grid">
+          {recommendedPromotions.map((promotion) => (
+            <PromotionCard
+              key={promotion.id}
+              promotion={promotion}
+              onToggleBookmark={(p) => toggle(p.id, p.is_bookmarked)}
+              onToggleApplication={(p) => toggleApplication(p.id, p.is_applied)}
+            />
+          ))}
+        </div>
       )}
 
       <div className="section-header">참여 이력</div>
@@ -59,6 +75,21 @@ export default function MyPage() {
       {!isBookmarksLoading && !isBookmarksError && bookmarks && bookmarks.length > 0 && (
         <div className="promotion-grid">
           {bookmarks.map((promotion) => (
+            <PromotionCard
+              key={promotion.id}
+              promotion={promotion}
+              onToggleBookmark={(p) => toggle(p.id, p.is_bookmarked)}
+              onToggleApplication={(p) => toggleApplication(p.id, p.is_applied)}
+            />
+          ))}
+        </div>
+      )}
+
+      <div className="section-header">신청한 프로모션</div>
+      {appliedPromotions.length === 0 && <p>신청한 프로모션이 없습니다.</p>}
+      {appliedPromotions.length > 0 && (
+        <div className="promotion-grid">
+          {appliedPromotions.map((promotion) => (
             <PromotionCard
               key={promotion.id}
               promotion={promotion}
