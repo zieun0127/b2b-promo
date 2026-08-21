@@ -16,7 +16,6 @@ const STATUS_FILTER_LABELS: { value: StatusFilter; label: string }[] = [
   { value: 'ALL', label: '전체' },
   { value: 'NEW', label: '신규' },
   { value: 'ENDING_SOON', label: '마감임박' },
-  { value: 'ALWAYS_OPEN', label: '상시' },
 ];
 
 export default function PromotionListPage() {
@@ -42,13 +41,12 @@ export default function PromotionListPage() {
       <div className="section-header">인기 프로모션 TOP3</div>
       <div className="promotion-top3-grid">
         {popular.map((promotion, index) => (
-          <div className="promotion-rank-card" key={promotion.id}>
-            <span className="promotion-rank">{index + 1}위</span>
-            <PromotionCard
-              promotion={promotion}
-              onToggleBookmark={(p) => toggle(p.id, p.is_bookmarked)}
-            />
-          </div>
+          <PromotionCard
+            key={promotion.id}
+            promotion={promotion}
+            rank={index + 1}
+            onToggleBookmark={(p) => toggle(p.id, p.is_bookmarked)}
+          />
         ))}
       </div>
 

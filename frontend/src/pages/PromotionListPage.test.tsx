@@ -114,13 +114,13 @@ describe('PromotionListPage', () => {
     expect(screen.getByRole('button', { name: '전체' })).toHaveClass('filter-button--active');
   });
 
-  it('"전체"/"신규"/"마감임박"/"상시" 상태 필터 버튼이 렌더링된다', () => {
+  it('"전체"/"신규"/"마감임박" 상태 필터 버튼이 렌더링된다', () => {
     mockLatestResult(null);
     mockPromotions({ data: [] });
 
     render(<PromotionListPage />);
 
-    ['전체', '신규', '마감임박', '상시'].forEach((label) => {
+    ['전체', '신규', '마감임박'].forEach((label) => {
       expect(screen.getByRole('button', { name: label })).toBeInTheDocument();
     });
   });
@@ -145,31 +145,11 @@ describe('PromotionListPage', () => {
     expect(within(grid).queryByText('오래된프로모션')).not.toBeInTheDocument();
   });
 
-  it('"상시" 필터를 클릭하면 마감일이 없는 프로모션만 표시된다', async () => {
-    const endsAt = new Date();
-    endsAt.setDate(endsAt.getDate() + 3);
-    mockLatestResult(null);
-    mockPromotions({
-      data: [
-        makePromotion({ id: 'a', name: '상시프로모션', ends_at: null }),
-        makePromotion({ id: 'b', name: '마감예정프로모션', ends_at: endsAt.toISOString() }),
-      ],
-    });
-    const user = userEvent.setup();
-    render(<PromotionListPage />);
-
-    await user.click(screen.getByRole('button', { name: '상시' }));
-
-    const grid = getListGrid();
-    expect(within(grid).getByText('상시프로모션')).toBeInTheDocument();
-    expect(within(grid).queryByText('마감예정프로모션')).not.toBeInTheDocument();
-  });
-
   it('"전체" 버튼을 클릭하면 상태 무관하게 모두 표시된다', async () => {
     mockLatestResult(null);
     mockPromotions({
       data: [
-        makePromotion({ id: 'a', name: '상시프로모션', ends_at: null }),
+        makePromotion({ id: 'a', name: '최근프로모션' }),
         makePromotion({ id: 'b', name: '오래된프로모션', created_at: '2020-01-01T00:00:00.000Z' }),
       ],
     });
@@ -180,19 +160,19 @@ describe('PromotionListPage', () => {
     await user.click(screen.getByRole('button', { name: '전체' }));
 
     const grid = getListGrid();
-    expect(within(grid).getByText('상시프로모션')).toBeInTheDocument();
+    expect(within(grid).getByText('최근프로모션')).toBeInTheDocument();
     expect(within(grid).getByText('오래된프로모션')).toBeInTheDocument();
   });
 
   it('필터 결과가 0건이면 안내 문구를 표시한다', async () => {
     mockLatestResult(null);
-    const endsAt = new Date();
-    endsAt.setDate(endsAt.getDate() + 3);
-    mockPromotions({ data: [makePromotion({ id: 'a', ends_at: endsAt.toISOString() })] });
+    mockPromotions({
+      data: [makePromotion({ id: 'a', created_at: '2020-01-01T00:00:00.000Z' })],
+    });
     const user = userEvent.setup();
     render(<PromotionListPage />);
 
-    await user.click(screen.getByRole('button', { name: '상시' }));
+    await user.click(screen.getByRole('button', { name: '신규' }));
 
     expect(screen.getByText('해당 상태에 맞는 프로모션이 없습니다.')).toBeInTheDocument();
   });
@@ -240,6 +220,24 @@ describe('PromotionListPage', () => {
     const top3After = screen.getByText('인기 프로모션 TOP3').nextElementSibling as HTMLElement;
     expect(within(top3After).getByText('ISTJ용')).toBeInTheDocument();
     expect(within(top3After).queryByText('ENFP용')).not.toBeInTheDocument();
+  });
+
+  it('인기 프로모션 TOP3 각 카드에 순위 뱃지(1위/2위/3위)가 표시된다', () => {
+    mockLatestResult(null);
+    mockPromotions({
+      data: [
+        makePromotion({ id: 'a', name: 'A', bookmark_count: 30 }),
+        makePromotion({ id: 'b', name: 'B', bookmark_count: 20 }),
+        makePromotion({ id: 'c', name: 'C', bookmark_count: 10 }),
+      ],
+    });
+
+    render(<PromotionListPage />);
+
+    const top3 = screen.getByText('인기 프로모션 TOP3').nextElementSibling as HTMLElement;
+    expect(within(top3).getByText('1위')).toBeInTheDocument();
+    expect(within(top3).getByText('2위')).toBeInTheDocument();
+    expect(within(top3).getByText('3위')).toBeInTheDocument();
   });
 
   it('인기 프로모션 TOP3에 포함된 항목은 전체 목록에서도 인기 뱃지가 표시된다', () => {

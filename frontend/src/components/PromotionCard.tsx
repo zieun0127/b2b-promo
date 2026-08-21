@@ -1,29 +1,32 @@
 import type { PromotionOfferListItem } from '../types/domain';
-import { daysUntil, isAlwaysOpen, isEnded, isEndingSoon, isNew } from '../utils/promotionBadges';
+import { daysUntil, isEndingSoon, isNew } from '../utils/promotionBadges';
 
 export interface PromotionCardProps {
   promotion: PromotionOfferListItem;
   onToggleBookmark?: (promotion: PromotionOfferListItem) => void;
   isPopular?: boolean;
+  rank?: number;
 }
 
-export default function PromotionCard({ promotion, onToggleBookmark, isPopular }: PromotionCardProps) {
+export default function PromotionCard({
+  promotion,
+  onToggleBookmark,
+  isPopular,
+  rank,
+}: PromotionCardProps) {
   const showNewBadge = isNew(promotion.created_at);
   const showEndingSoonBadge = isEndingSoon(promotion.ends_at);
-  const showEndedBadge = isEnded(promotion.ends_at);
-  const showAlwaysOpenBadge = isAlwaysOpen(promotion.ends_at);
 
   return (
     <div className="card promotion-card">
       <div className="promotion-card__badges">
+        {rank != null && <span className="badge badge--rank">{rank}위</span>}
         {promotion.recommended && <span className="badge badge--accent">추천</span>}
         {isPopular && <span className="badge badge--success">인기</span>}
         {showNewBadge && <span className="badge badge--success">신규</span>}
         {showEndingSoonBadge && (
           <span className="badge badge--accent">마감임박(D-{daysUntil(promotion.ends_at as string)})</span>
         )}
-        {showEndedBadge && <span className="badge badge--muted">마감</span>}
-        {showAlwaysOpenBadge && <span className="badge badge--info">상시</span>}
         {promotion.mbti_type_codes.map((code) => (
           <span className="badge badge--type" key={code}>
             {code}

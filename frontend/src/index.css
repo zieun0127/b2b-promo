@@ -331,18 +331,6 @@ body {
   }
 }
 
-.promotion-rank-card {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.promotion-rank {
-  font-size: 12px;
-  font-weight: bold;
-  color: var(--color-text-muted);
-}
-
 .promotion-filter-bar {
   display: flex;
   flex-wrap: nowrap;
@@ -401,11 +389,7 @@ body {
   background-color: var(--color-primary);
 }
 
-.badge--muted {
-  background-color: var(--color-text-muted);
-}
-
-.badge--info {
+.badge--rank {
   background-color: var(--color-chart-accent);
 }
 

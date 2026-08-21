@@ -4,8 +4,6 @@ import {
   daysUntil,
   filterByMbtiType,
   filterByStatus,
-  isAlwaysOpen,
-  isEnded,
   isEndingSoon,
   isNew,
   pickTopByBookmarks,
@@ -59,30 +57,6 @@ describe('isEndingSoon', () => {
 
   it('이미 마감된(과거) 시점이면 false를 반환한다', () => {
     expect(isEndingSoon('2026-08-19T00:00:00.000Z', NOW)).toBe(false);
-  });
-});
-
-describe('isEnded', () => {
-  it('ends_at이 null이면 false를 반환한다(상시 프로모션)', () => {
-    expect(isEnded(null, NOW)).toBe(false);
-  });
-
-  it('마감일이 과거이면 true를 반환한다', () => {
-    expect(isEnded('2026-08-19T00:00:00.000Z', NOW)).toBe(true);
-  });
-
-  it('마감일이 미래이면 false를 반환한다', () => {
-    expect(isEnded('2026-08-25T00:00:00.000Z', NOW)).toBe(false);
-  });
-});
-
-describe('isAlwaysOpen', () => {
-  it('ends_at이 null이면 true를 반환한다', () => {
-    expect(isAlwaysOpen(null)).toBe(true);
-  });
-
-  it('ends_at이 있으면 false를 반환한다', () => {
-    expect(isAlwaysOpen('2026-08-25T00:00:00.000Z')).toBe(false);
   });
 });
 
@@ -171,17 +145,12 @@ describe('filterByStatus', () => {
     created_at: '2026-01-01T00:00:00.000Z',
     ends_at: '2026-08-22T00:00:00.000Z',
   });
-  const alwaysOpen = makePromotion({
-    id: 'c',
-    created_at: '2026-01-01T00:00:00.000Z',
-    ends_at: null,
-  });
   const ended = makePromotion({
     id: 'd',
     created_at: '2026-01-01T00:00:00.000Z',
     ends_at: '2026-08-01T00:00:00.000Z',
   });
-  const all = [newOne, endingSoon, alwaysOpen, ended];
+  const all = [newOne, endingSoon, ended];
 
   it('"ALL"이면 전부 반환한다', () => {
     expect(filterByStatus(all, 'ALL', NOW)).toEqual(all);
@@ -193,9 +162,5 @@ describe('filterByStatus', () => {
 
   it('"ENDING_SOON"이면 마감임박인 것만 반환한다', () => {
     expect(filterByStatus(all, 'ENDING_SOON', NOW).map((p) => p.id)).toEqual(['b']);
-  });
-
-  it('"ALWAYS_OPEN"이면 마감일이 없는 것만 반환한다', () => {
-    expect(filterByStatus(all, 'ALWAYS_OPEN', NOW).map((p) => p.id)).toEqual(['a', 'c']);
   });
 });
