@@ -17,6 +17,15 @@ export function isEndingSoon(endsAt: string | null, now: Date = new Date()): boo
   return remainingMs >= 0 && remainingMs <= ENDING_SOON_WITHIN_DAYS * DAY_MS;
 }
 
+export function isEnded(endsAt: string | null, now: Date = new Date()): boolean {
+  if (!endsAt) return false;
+  return new Date(endsAt).getTime() < now.getTime();
+}
+
+export function isAlwaysOpen(endsAt: string | null): boolean {
+  return endsAt === null;
+}
+
 export function daysUntil(endsAt: string, now: Date = new Date()): number {
   const remainingMs = new Date(endsAt).getTime() - now.getTime();
   return Math.max(0, Math.ceil(remainingMs / DAY_MS));
@@ -46,4 +55,25 @@ export function filterByMbtiType(
 ): PromotionOfferListItem[] {
   if (filter === ALL_MBTI_FILTER) return promotions;
   return promotions.filter((p) => p.mbti_type_codes.includes(filter));
+}
+
+export const STATUS_FILTERS = ['ALL', 'NEW', 'ENDING_SOON', 'ALWAYS_OPEN'] as const;
+export type StatusFilter = (typeof STATUS_FILTERS)[number];
+
+export function filterByStatus(
+  promotions: PromotionOfferListItem[],
+  status: StatusFilter,
+  now: Date = new Date()
+): PromotionOfferListItem[] {
+  switch (status) {
+    case 'NEW':
+      return promotions.filter((p) => isNew(p.created_at, now));
+    case 'ENDING_SOON':
+      return promotions.filter((p) => isEndingSoon(p.ends_at, now));
+    case 'ALWAYS_OPEN':
+      return promotions.filter((p) => isAlwaysOpen(p.ends_at));
+    case 'ALL':
+    default:
+      return promotions;
+  }
 }

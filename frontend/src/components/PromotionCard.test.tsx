@@ -101,4 +101,45 @@ describe('PromotionCard', () => {
 
     expect(screen.queryByText(/^[EI][SN][TF][JP]$/)).not.toBeInTheDocument();
   });
+
+  it('마감일이 지났으면 마감 뱃지를 표시한다', () => {
+    const endsAt = new Date();
+    endsAt.setDate(endsAt.getDate() - 10);
+    render(<PromotionCard promotion={makePromotion({ ends_at: endsAt.toISOString() })} />);
+
+    expect(screen.getByText('마감')).toBeInTheDocument();
+    expect(screen.queryByText(/마감임박/)).not.toBeInTheDocument();
+  });
+
+  it('마감일이 지나지 않았으면 마감 뱃지를 표시하지 않는다', () => {
+    render(<PromotionCard promotion={makePromotion({ ends_at: null })} />);
+
+    expect(screen.queryByText('마감')).not.toBeInTheDocument();
+  });
+
+  it('ends_at이 null이면 상시 뱃지를 표시한다', () => {
+    render(<PromotionCard promotion={makePromotion({ ends_at: null })} />);
+
+    expect(screen.getByText('상시')).toBeInTheDocument();
+  });
+
+  it('ends_at이 있으면 상시 뱃지를 표시하지 않는다', () => {
+    const endsAt = new Date();
+    endsAt.setDate(endsAt.getDate() + 3);
+    render(<PromotionCard promotion={makePromotion({ ends_at: endsAt.toISOString() })} />);
+
+    expect(screen.queryByText('상시')).not.toBeInTheDocument();
+  });
+
+  it('isPopular가 true이면 인기 뱃지를 표시한다', () => {
+    render(<PromotionCard promotion={makePromotion({})} isPopular />);
+
+    expect(screen.getByText('인기')).toBeInTheDocument();
+  });
+
+  it('isPopular가 없으면 인기 뱃지를 표시하지 않는다', () => {
+    render(<PromotionCard promotion={makePromotion({})} />);
+
+    expect(screen.queryByText('인기')).not.toBeInTheDocument();
+  });
 });

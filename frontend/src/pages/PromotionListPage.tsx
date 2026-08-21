@@ -3,19 +3,27 @@ import { usePromotions } from '../hooks/usePromotions';
 import { useToggleBookmark } from '../hooks/useBookmarks';
 import { useMyLatestResult } from '../hooks/useMyLatestResult';
 import PromotionCard from '../components/PromotionCard';
-import { MBTI_TYPE_CODES } from '../constants/mbtiTypes';
 import {
   ALL_MBTI_FILTER,
   filterByMbtiType,
+  filterByStatus,
   pickTopByBookmarks,
   sortByRecommendedThenDate,
+  type StatusFilter,
 } from '../utils/promotionBadges';
+
+const STATUS_FILTER_LABELS: { value: StatusFilter; label: string }[] = [
+  { value: 'ALL', label: '전체' },
+  { value: 'NEW', label: '신규' },
+  { value: 'ENDING_SOON', label: '마감임박' },
+  { value: 'ALWAYS_OPEN', label: '상시' },
+];
 
 export default function PromotionListPage() {
   const { data, isLoading, isError } = usePromotions();
   const { data: latestResult } = useMyLatestResult();
   const { toggle } = useToggleBookmark();
-  const [selectedFilter, setSelectedFilter] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('ALL');
 
   if (isLoading) return <div className="promotion-list-page">불러오는 중...</div>;
   if (isError || !data) {
@@ -23,9 +31,9 @@ export default function PromotionListPage() {
   }
 
   const ownTypeCode = latestResult?.mbti_result_type.type_code ?? ALL_MBTI_FILTER;
-  const activeFilter = selectedFilter ?? ownTypeCode;
   const popular = pickTopByBookmarks(filterByMbtiType(data, ownTypeCode));
-  const filtered = sortByRecommendedThenDate(filterByMbtiType(data, activeFilter));
+  const popularIds = new Set(popular.map((p) => p.id));
+  const filtered = sortByRecommendedThenDate(filterByStatus(data, statusFilter));
 
   return (
     <div className="promotion-list-page">
@@ -46,31 +54,25 @@ export default function PromotionListPage() {
 
       <div className="section-header">프로모션 목록</div>
       <div className="promotion-filter-bar">
-        <button
-          type="button"
-          className={`filter-button${activeFilter === ALL_MBTI_FILTER ? ' filter-button--active' : ''}`}
-          onClick={() => setSelectedFilter(ALL_MBTI_FILTER)}
-        >
-          전체
-        </button>
-        {MBTI_TYPE_CODES.map((code) => (
+        {STATUS_FILTER_LABELS.map(({ value, label }) => (
           <button
-            key={code}
+            key={value}
             type="button"
-            className={`filter-button${activeFilter === code ? ' filter-button--active' : ''}`}
-            onClick={() => setSelectedFilter(code)}
+            className={`filter-button${statusFilter === value ? ' filter-button--active' : ''}`}
+            onClick={() => setStatusFilter(value)}
           >
-            {code}
+            {label}
           </button>
         ))}
       </div>
 
-      {filtered.length === 0 && <p>해당 유형에 매핑된 프로모션이 없습니다.</p>}
+      {filtered.length === 0 && <p>해당 상태에 맞는 프로모션이 없습니다.</p>}
       <div className="promotion-grid">
         {filtered.map((promotion) => (
           <PromotionCard
             key={promotion.id}
             promotion={promotion}
+            isPopular={popularIds.has(promotion.id)}
             onToggleBookmark={(p) => toggle(p.id, p.is_bookmarked)}
           />
         ))}
