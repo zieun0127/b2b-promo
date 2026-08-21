@@ -103,6 +103,15 @@ flowchart TB
   - [x] 로컬 dev DB와 운영(Supabase) DB 양쪽에 동일하게 반영된다 (양쪽에서 동일 SQL 실행 후 각각 카운트 확인)
   - **작업 파일**: `backend/src/migrations/006_seed_more_promotions.sql`
 
+### DB-7. 프로모션 데이터 추가 시드 2차 (사용자 요청, 콘텐츠 다양화)
+
+- **선행 Task**: DB-6
+- **작업**: `backend/src/migrations/007_seed_more_promotions_2.sql` 작성·실행 — 기존 32개(유형당 2건)에 유형당 2건씩 추가해 총 64개(유형당 4건)로 확장.
+- **완료 조건**
+  - [x] `promotion_offers`가 64건, 유형당 4건씩이다 (로컬/운영 DB 모두 실측 쿼리로 확인)
+  - [x] 로컬 dev DB와 운영(Supabase) DB 양쪽에 동일하게 반영된다
+  - **작업 파일**: `backend/src/migrations/007_seed_more_promotions_2.sql`
+
 ---
 
 ## 2. 백엔드 (Node.js + Express + pg)
@@ -302,7 +311,9 @@ flowchart TB
   - [x] (v1.8 추가) "인기 프로모션 TOP3"는 완료된 결과가 있으면 본인 MBTI 유형에 매핑된 프로모션 내에서만 집계하고(결과 없으면 전체 기준), 목록 필터를 다른 값으로 바꿔도 TOP3는 본인 유형 기준을 그대로 유지한다 (`PromotionListPage.tsx`: TOP3는 목록 필터 상태가 아닌 `latestResult`에서 직접 도출한 `ownTypeCode`로 계산. `PromotionListPage.test.tsx`에 본인 유형 스코핑+필터 변경에도 불변 케이스 추가. Playwright로 실제 ESTJ 판정 계정에서 TOP3가 ESTJ 매핑 프로모션 1건만 표시되고 "전체" 데이터 대비 축소됨을 확인, 테스트 계정 정리함)
   - [x] (v1.9, v1.10에서 "마감"/"상시" 제거) "인기 프로모션 TOP3"에 포함된 프로모션은 목록에서도 "인기" 뱃지가 표시된다 (`PromotionListPage.tsx`가 TOP3와 동일한 id 집합을 `isPopular` prop으로 전달. `PromotionCard.test.tsx`/`PromotionListPage.test.tsx`에 케이스 추가)
   - [x] (v1.10 추가) "인기 프로모션 TOP3" 각 카드에 순위 뱃지("1위"/"2위"/"3위")가 표시된다 (`PromotionCard.tsx`에 `rank` prop 추가, `PromotionListPage.tsx`가 TOP3 순회 시 `index + 1`을 전달. `PromotionCard.test.tsx`/`PromotionListPage.test.tsx`에 케이스 추가. Playwright로 실제 데이터에서 1위/2위/3위 렌더 확인)
-  - **테스트**: `promotionBadges.test.ts`(뱃지·정렬·인기 TOP3·상태 필터 순수 함수), `promotionApi.test.ts`, `bookmarkApi.test.ts`, `PromotionCard.test.tsx`, `PromotionListPage.test.tsx` — 전체 138 tests 통과, 대상 파일(`promotionBadges.ts`/`PromotionCard.tsx` 100%) 목표 90% 충족
+  - [x] (v1.12 추가) 상태 필터에 "내 MBTI" 버튼이 추가되어, 완료된 결과가 있으면 본인 유형에 매핑된 프로모션만 목록에서 걸러볼 수 있다(결과 없으면 "전체"와 동일) (`filterByStatus`에 `ownTypeCode` 파라미터 추가, `'MY_TYPE'` case가 기존 `filterByMbtiType`을 재사용. `promotionBadges.test.ts`/`PromotionListPage.test.tsx`에 케이스 추가)
+  - [x] (v1.13 추가, v1.8/v1.9 롤백) "인기 프로모션 TOP3"는 본인 MBTI 유형에 한정하지 않고 항상 전체 프로모션 대상으로 신청 수(`application_count`) 상위 3개를 집계한다 — `pickTopByBookmarks`를 `pickTopByApplications`로 교체(정렬 키를 `bookmark_count`→`application_count`로 변경), `PromotionListPage.tsx`에서 `filterByMbtiType(data, ownTypeCode)` 스코핑 제거. "인기"와 "신규" 뱃지 색상을 분리(둘 다 그린이라 구분 안 되던 문제 해결, `.badge--popular` 퍼플 신규 추가). `promotionBadges.test.ts`/`PromotionListPage.test.tsx`에 케이스 갱신
+  - **테스트**: `promotionBadges.test.ts`(뱃지·정렬·인기 TOP3·상태 필터 순수 함수), `promotionApi.test.ts`, `bookmarkApi.test.ts`, `PromotionCard.test.tsx`, `PromotionListPage.test.tsx` — 전체 154 tests 통과, `tsc -b`·`oxlint` 통과
 
 ### FE-8. 마이페이지 확장: 참여 이력 및 북마크 목록 (v1.6 신규)
 - **선행 Task**: FE-4, FE-7(`PromotionCard` 재사용), BE-9
@@ -399,3 +410,5 @@ flowchart TB
 | v1.31 | 2026-08-21 | 사용자 요청 반영(v1.30 일부 롤백): 인기 프로모션 TOP3 각 카드에 순위 뱃지("1위"/"2위"/"3위") 추가(`PromotionCard.tsx`에 `rank` prop, `PromotionListPage.tsx`가 `index+1` 전달). "마감"/"상시" 뱃지(`isEnded`/`isAlwaysOpen`)와 "상시" 상태 필터 버튼 제거 — 사장님이 직접 등록·관리하는 정보라 마감 여부를 별도 표시할 실익이 낮다는 판단(상태 필터는 "전체"/"신규"/"마감임박" 3개로 축소). `docs/1-domain-definition.md`(v1.10), `3-PRD.md`(v1.9), `7-wireframe.md`(v1.7), `10-style.md`(v1.7) 갱신. 전체 138 tests 통과, `promotionBadges.ts`/`PromotionCard.tsx` 100%·`PromotionListPage.tsx` 95.23%, `tsc -b`·`oxlint` 통과. Playwright로 실제 데이터에서 TOP3 순위 뱃지(1위/2위/3위) 및 목록의 마감임박/신규/인기 뱃지 정상 표시, 마감/상시 뱃지 미노출 확인 |
 | v1.32 | 2026-08-21 | 사용자 요청 반영(서비스 활용성 강화): BE-11(프로모션 신청 API)·FE-10(신청 UI) 신규 Task 추가·완료. DB-5(`005_add_promotion_applications.sql`, bookmarks와 동일 구조의 `promotion_applications` 테이블) 신설, `POST/DELETE /api/applications`(멱등 토글)·관리자 전용 `GET /api/promotion-offers/:id/applicants`(email+applied_at) 추가, `promotion_offers` 목록 응답에 `application_count`/`is_applied` 추가. 프론트 `PromotionCard`에 "신청하기"/"신청완료" 버튼, `AdminPromotionManagePage`에 신청 수+`<details>` 기반 신청자 목록(지연 조회) 추가. 별도 연락처 입력 폼 없이 계정 email을 재사용해 관리자가 직접 연락하는 흐름 — 북마크(관심 표시)만 있던 "표시 전용" 구조를 관리자가 실제로 연락해 진행할 수 있는 액션으로 보강. `docs/1-domain-definition.md`(v1.11), `3-PRD.md`(v1.10), `8-erd.md`(v1.2), `8-schema.sql`, `swagger.json` 갱신. 백엔드 전체 14 suites 86 tests 통과(신규 파일 100%·컨트롤러 90%), 프론트 전체 21 files 151 tests 통과(`applicationApi.ts`/`PromotionCard.tsx` 100%), `tsc -b`·`oxlint` 통과 |
 | v1.33 | 2026-08-21 | 운영 배포 백엔드(`https://mbti-127-be.vercel.app`) 대상 API 레벨 E2E 테스트 수행(`docs/4-user-scenario.md` 시나리오 1~9 + 엣지 케이스 + 신청 기능, 33건 전부 PASS, `e2e/report-prod-api.md`). 테스트 중 프론트엔드가 아직 Vercel에 배포되지 않았고 `frontend/.env.production`의 `VITE_API_BASE_URL`에 오타(`mbit`→`mbti`)가 있었음을 발견해 로컬 파일 수정(Vercel 환경변수 반영은 사용자 몫). DB-6(`006_seed_more_promotions.sql`) 신규 Task 추가·완료: 사용자 요청으로 유형당 프로모션을 1개→2개로 늘려 로컬/운영 DB 모두 32건으로 확장(뱃지 날짜 분포는 DB-4와 동일 패턴 재사용) |
+| v1.34 | 2026-08-21 | 사용자 요청 반영: 프로모션 목록 상태 필터에 "내 MBTI" 버튼 추가(FE-7) — 완료된 결과가 있으면 본인 유형에 매핑된 프로모션만 목록에서 걸러보고, 없으면 "전체"와 동일하게 폴백한다. `filterByStatus`(`promotionBadges.ts`)에 `ownTypeCode` 파라미터를 추가해 기존 `filterByMbtiType`(TOP3 개인화용)을 재사용, 새 함수 신설 없음. `docs/1-domain-definition.md`(v1.12), `3-PRD.md`(v1.11), `7-wireframe.md`(v1.9), `10-style.md`(v1.9) 갱신. 전체 154 tests 통과, `tsc -b`·`oxlint` 통과 |
+| v1.35 | 2026-08-21 | 사용자 요청 반영(v1.8/v1.9 인기 프로모션 개인화 롤백): "인기 프로모션 TOP3"를 본인 MBTI 유형에 한정하지 않고 전체 프로모션 대상 신청 수(`application_count`) 기준으로 변경 — `pickTopByBookmarks`를 `pickTopByApplications`로 교체, `PromotionListPage.tsx`에서 TOP3의 `filterByMbtiType` 스코핑 제거. "인기"/"신규" 뱃지가 동일한 그린이라 구분이 안 되던 문제를 해결하기 위해 "인기" 뱃지 색상을 퍼플(`--color-popular: #7C4DBF`, `.badge--popular`)로 분리. DB-7(`007_seed_more_promotions_2.sql`) 신규 Task 추가·완료: 유형당 프로모션을 2개→4개로 늘려 로컬/운영 DB 모두 64건으로 확장. `docs/1-domain-definition.md`(v1.13), `3-PRD.md`(v1.12), `7-wireframe.md`(v1.10), `10-style.md`(v1.10) 갱신. 전체 154 tests 통과, `tsc -b`·`oxlint` 통과 |

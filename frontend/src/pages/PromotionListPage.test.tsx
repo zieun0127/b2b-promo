@@ -122,15 +122,33 @@ describe('PromotionListPage', () => {
     expect(screen.getByRole('button', { name: '전체' })).toHaveClass('filter-button--active');
   });
 
-  it('"전체"/"신규"/"마감임박" 상태 필터 버튼이 렌더링된다', () => {
+  it('"전체"/"신규"/"마감임박"/"내 MBTI" 상태 필터 버튼이 렌더링된다', () => {
     mockLatestResult(null);
     mockPromotions({ data: [] });
 
     render(<PromotionListPage />);
 
-    ['전체', '신규', '마감임박'].forEach((label) => {
+    ['전체', '신규', '마감임박', '내 MBTI'].forEach((label) => {
       expect(screen.getByRole('button', { name: label })).toBeInTheDocument();
     });
+  });
+
+  it('"내 MBTI" 필터를 클릭하면 본인 유형에 매핑된 프로모션만 표시된다', async () => {
+    mockLatestResult(makeResult('ISTJ'));
+    mockPromotions({
+      data: [
+        makePromotion({ id: 'a', name: 'ISTJ용', mbti_type_codes: ['ISTJ'] }),
+        makePromotion({ id: 'b', name: 'ENFP용', mbti_type_codes: ['ENFP'] }),
+      ],
+    });
+    const user = userEvent.setup();
+    render(<PromotionListPage />);
+
+    await user.click(screen.getByRole('button', { name: '내 MBTI' }));
+
+    const grid = getListGrid();
+    expect(within(grid).getByText('ISTJ용')).toBeInTheDocument();
+    expect(within(grid).queryByText('ENFP용')).not.toBeInTheDocument();
   });
 
   it('"신규" 필터를 클릭하면 최근 등록된 프로모션만 표시된다', async () => {
@@ -189,8 +207,8 @@ describe('PromotionListPage', () => {
     mockLatestResult(null);
     mockPromotions({
       data: [
-        makePromotion({ id: 'a', name: 'A', bookmark_count: 10 }),
-        makePromotion({ id: 'b', name: 'B', bookmark_count: 5 }),
+        makePromotion({ id: 'a', name: 'A', application_count: 10 }),
+        makePromotion({ id: 'b', name: 'B', application_count: 5 }),
       ],
     });
     const user = userEvent.setup();
@@ -207,36 +225,28 @@ describe('PromotionListPage', () => {
     expect(within(top3After).getByText('B')).toBeInTheDocument();
   });
 
-  it('완료된 결과가 있으면 인기 프로모션 TOP3도 자신의 MBTI 유형 내에서만 집계된다', async () => {
+  it('완료된 결과가 있어도 인기 프로모션 TOP3는 본인 유형에 한정되지 않고 전체 유형에서 집계된다', () => {
     mockLatestResult(makeResult('ISTJ'));
     mockPromotions({
       data: [
-        makePromotion({ id: 'a', name: 'ISTJ용', mbti_type_codes: ['ISTJ'], bookmark_count: 1 }),
-        makePromotion({ id: 'b', name: 'ENFP용', mbti_type_codes: ['ENFP'], bookmark_count: 100 }),
+        makePromotion({ id: 'a', name: 'ISTJ용', mbti_type_codes: ['ISTJ'], application_count: 1 }),
+        makePromotion({ id: 'b', name: 'ENFP용', mbti_type_codes: ['ENFP'], application_count: 100 }),
       ],
     });
-    const user = userEvent.setup();
     render(<PromotionListPage />);
 
     const top3 = screen.getByText('인기 프로모션 TOP3').nextElementSibling as HTMLElement;
     expect(within(top3).getByText('ISTJ용')).toBeInTheDocument();
-    expect(within(top3).queryByText('ENFP용')).not.toBeInTheDocument();
-
-    // 목록 상태 필터를 바꿔도 TOP3는 여전히 자신의 유형(ISTJ) 기준을 유지한다
-    await user.click(screen.getByRole('button', { name: '신규' }));
-
-    const top3After = screen.getByText('인기 프로모션 TOP3').nextElementSibling as HTMLElement;
-    expect(within(top3After).getByText('ISTJ용')).toBeInTheDocument();
-    expect(within(top3After).queryByText('ENFP용')).not.toBeInTheDocument();
+    expect(within(top3).getByText('ENFP용')).toBeInTheDocument();
   });
 
   it('인기 프로모션 TOP3 각 카드에 순위 뱃지(1위/2위/3위)가 표시된다', () => {
     mockLatestResult(null);
     mockPromotions({
       data: [
-        makePromotion({ id: 'a', name: 'A', bookmark_count: 30 }),
-        makePromotion({ id: 'b', name: 'B', bookmark_count: 20 }),
-        makePromotion({ id: 'c', name: 'C', bookmark_count: 10 }),
+        makePromotion({ id: 'a', name: 'A', application_count: 30 }),
+        makePromotion({ id: 'b', name: 'B', application_count: 20 }),
+        makePromotion({ id: 'c', name: 'C', application_count: 10 }),
       ],
     });
 
@@ -252,10 +262,10 @@ describe('PromotionListPage', () => {
     mockLatestResult(null);
     mockPromotions({
       data: [
-        makePromotion({ id: 'a', name: '인기프로모션A', bookmark_count: 100 }),
-        makePromotion({ id: 'b', name: '인기프로모션B', bookmark_count: 90 }),
-        makePromotion({ id: 'c', name: '인기프로모션C', bookmark_count: 80 }),
-        makePromotion({ id: 'd', name: '비인기프로모션', bookmark_count: 0 }),
+        makePromotion({ id: 'a', name: '인기프로모션A', application_count: 100 }),
+        makePromotion({ id: 'b', name: '인기프로모션B', application_count: 90 }),
+        makePromotion({ id: 'c', name: '인기프로모션C', application_count: 80 }),
+        makePromotion({ id: 'd', name: '비인기프로모션', application_count: 0 }),
       ],
     });
 
@@ -290,14 +300,14 @@ describe('PromotionListPage', () => {
     expect(names.indexOf('추천대상')).toBeLessThan(names.indexOf('일반'));
   });
 
-  it('북마크 수 상위 3개가 인기 프로모션 TOP3에 노출된다', () => {
+  it('신청 수 상위 3개가 인기 프로모션 TOP3에 노출된다', () => {
     mockLatestResult(null);
     mockPromotions({
       data: [
-        makePromotion({ id: 'a', name: 'A', bookmark_count: 1 }),
-        makePromotion({ id: 'b', name: 'B', bookmark_count: 30 }),
-        makePromotion({ id: 'c', name: 'C', bookmark_count: 20 }),
-        makePromotion({ id: 'd', name: 'D', bookmark_count: 10 }),
+        makePromotion({ id: 'a', name: 'A', application_count: 1 }),
+        makePromotion({ id: 'b', name: 'B', application_count: 30 }),
+        makePromotion({ id: 'c', name: 'C', application_count: 20 }),
+        makePromotion({ id: 'd', name: 'D', application_count: 10 }),
       ],
     });
 

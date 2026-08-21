@@ -6,9 +6,8 @@ import { useMyLatestResult } from '../hooks/useMyLatestResult';
 import PromotionCard from '../components/PromotionCard';
 import {
   ALL_MBTI_FILTER,
-  filterByMbtiType,
   filterByStatus,
-  pickTopByBookmarks,
+  pickTopByApplications,
   sortByRecommendedThenDate,
   type StatusFilter,
 } from '../utils/promotionBadges';
@@ -17,6 +16,7 @@ const STATUS_FILTER_LABELS: { value: StatusFilter; label: string }[] = [
   { value: 'ALL', label: '전체' },
   { value: 'NEW', label: '신규' },
   { value: 'ENDING_SOON', label: '마감임박' },
+  { value: 'MY_TYPE', label: '내 MBTI' },
 ];
 
 export default function PromotionListPage() {
@@ -32,9 +32,9 @@ export default function PromotionListPage() {
   }
 
   const ownTypeCode = latestResult?.mbti_result_type.type_code ?? ALL_MBTI_FILTER;
-  const popular = pickTopByBookmarks(filterByMbtiType(data, ownTypeCode));
+  const popular = pickTopByApplications(data);
   const popularIds = new Set(popular.map((p) => p.id));
-  const filtered = sortByRecommendedThenDate(filterByStatus(data, statusFilter));
+  const filtered = sortByRecommendedThenDate(filterByStatus(data, statusFilter, undefined, ownTypeCode));
 
   return (
     <div className="promotion-list-page">

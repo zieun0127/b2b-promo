@@ -31,11 +31,11 @@ export function sortByRecommendedThenDate(
   });
 }
 
-export function pickTopByBookmarks(
+export function pickTopByApplications(
   promotions: PromotionOfferListItem[],
   n: number = POPULAR_TOP_N
 ): PromotionOfferListItem[] {
-  return [...promotions].sort((a, b) => b.bookmark_count - a.bookmark_count).slice(0, n);
+  return [...promotions].sort((a, b) => b.application_count - a.application_count).slice(0, n);
 }
 
 export const ALL_MBTI_FILTER = 'ALL';
@@ -48,19 +48,22 @@ export function filterByMbtiType(
   return promotions.filter((p) => p.mbti_type_codes.includes(filter));
 }
 
-export const STATUS_FILTERS = ['ALL', 'NEW', 'ENDING_SOON'] as const;
+export const STATUS_FILTERS = ['ALL', 'NEW', 'ENDING_SOON', 'MY_TYPE'] as const;
 export type StatusFilter = (typeof STATUS_FILTERS)[number];
 
 export function filterByStatus(
   promotions: PromotionOfferListItem[],
   status: StatusFilter,
-  now: Date = new Date()
+  now: Date = new Date(),
+  ownTypeCode: string = ALL_MBTI_FILTER
 ): PromotionOfferListItem[] {
   switch (status) {
     case 'NEW':
       return promotions.filter((p) => isNew(p.created_at, now));
     case 'ENDING_SOON':
       return promotions.filter((p) => isEndingSoon(p.ends_at, now));
+    case 'MY_TYPE':
+      return filterByMbtiType(promotions, ownTypeCode);
     case 'ALL':
     default:
       return promotions;

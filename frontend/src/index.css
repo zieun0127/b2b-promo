@@ -15,6 +15,7 @@
   --color-accent: #e4453a;
   --color-success: #2e8b57;
   --color-chart-accent: #e8804a;
+  --color-popular: #7c4dbf;
 
   font-family: -apple-system, 'Segoe UI', 'Malgun Gothic', sans-serif;
   color: var(--color-text);
@@ -379,6 +380,10 @@ body {
 
 .badge--success {
   background-color: var(--color-success);
+}
+
+.badge--popular {
+  background-color: var(--color-popular);
 }
 
 .badge--accent {

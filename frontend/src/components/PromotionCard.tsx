@@ -24,7 +24,7 @@ export default function PromotionCard({
       <div className="promotion-card__badges">
         {rank != null && <span className="badge badge--rank">{rank}위</span>}
         {promotion.recommended && <span className="badge badge--accent">추천</span>}
-        {isPopular && <span className="badge badge--success">인기</span>}
+        {isPopular && <span className="badge badge--popular">인기</span>}
         {showNewBadge && <span className="badge badge--success">신규</span>}
         {showEndingSoonBadge && (
           <span className="badge badge--accent">마감임박(D-{daysUntil(promotion.ends_at as string)})</span>

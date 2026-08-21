@@ -6,7 +6,7 @@ import {
   filterByStatus,
   isEndingSoon,
   isNew,
-  pickTopByBookmarks,
+  pickTopByApplications,
   sortByRecommendedThenDate,
 } from './promotionBadges';
 import type { PromotionOfferListItem } from '../types/domain';
@@ -97,26 +97,26 @@ describe('sortByRecommendedThenDate', () => {
   });
 });
 
-describe('pickTopByBookmarks', () => {
-  it('북마크 수 내림차순으로 상위 N개만 반환한다', () => {
+describe('pickTopByApplications', () => {
+  it('신청 수 내림차순으로 상위 N개만 반환한다', () => {
     const list = [
-      makePromotion({ id: 'a', bookmark_count: 1 }),
-      makePromotion({ id: 'b', bookmark_count: 20 }),
-      makePromotion({ id: 'c', bookmark_count: 5 }),
-      makePromotion({ id: 'd', bookmark_count: 12 }),
+      makePromotion({ id: 'a', application_count: 1 }),
+      makePromotion({ id: 'b', application_count: 20 }),
+      makePromotion({ id: 'c', application_count: 5 }),
+      makePromotion({ id: 'd', application_count: 12 }),
     ];
 
-    const result = pickTopByBookmarks(list, 3);
+    const result = pickTopByApplications(list, 3);
 
     expect(result.map((p) => p.id)).toEqual(['b', 'd', 'c']);
   });
 
   it('기본값은 3개까지만 반환한다', () => {
     const list = Array.from({ length: 5 }, (_, i) =>
-      makePromotion({ id: `p${i}`, bookmark_count: i })
+      makePromotion({ id: `p${i}`, application_count: i })
     );
 
-    expect(pickTopByBookmarks(list)).toHaveLength(3);
+    expect(pickTopByApplications(list)).toHaveLength(3);
   });
 });
 
@@ -164,5 +164,16 @@ describe('filterByStatus', () => {
 
   it('"ENDING_SOON"이면 마감임박인 것만 반환한다', () => {
     expect(filterByStatus(all, 'ENDING_SOON', NOW).map((p) => p.id)).toEqual(['b']);
+  });
+
+  it('"MY_TYPE"이면 본인 유형에 매핑된 프로모션만 반환한다', () => {
+    const enfp = makePromotion({ id: 'e', mbti_type_codes: ['ENFP'] });
+    const istj = makePromotion({ id: 'f', mbti_type_codes: ['ISTJ'] });
+
+    expect(filterByStatus([enfp, istj], 'MY_TYPE', NOW, 'ENFP').map((p) => p.id)).toEqual(['e']);
+  });
+
+  it('"MY_TYPE"인데 본인 유형(ownTypeCode)이 없으면 전체를 반환한다', () => {
+    expect(filterByStatus(all, 'MY_TYPE', NOW)).toEqual(all);
   });
 });
