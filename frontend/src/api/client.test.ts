@@ -35,7 +35,7 @@ describe('apiFetch', () => {
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
     const [url, options] = fetchMock.mock.calls[0];
-    expect(url).toBe('/api/promotions');
+    expect(url).toBe('http://localhost:3000/api/promotions');
     const headers = new Headers(options.headers);
     expect(headers.get('Authorization')).toBe('Bearer access-1');
   });
@@ -62,7 +62,7 @@ describe('apiFetch', () => {
     expect(fetchMock).toHaveBeenCalledTimes(3);
 
     const refreshCall = fetchMock.mock.calls[1];
-    expect(refreshCall[0]).toBe('/api/auth/refresh');
+    expect(refreshCall[0]).toBe('http://localhost:3000/api/auth/refresh');
     expect(JSON.parse(refreshCall[1].body)).toEqual({ refresh_token: 'refresh-1' });
 
     const retryCall = fetchMock.mock.calls[2];

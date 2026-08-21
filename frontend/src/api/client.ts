@@ -1,6 +1,6 @@
 import { useAuthStore } from '../store/authStore';
 
-const BASE_URL = '/api';
+const BASE_URL = `${import.meta.env.VITE_API_BASE_URL ?? ''}/api`;
 
 let refreshingPromise: Promise<string | null> | null = null;
 
